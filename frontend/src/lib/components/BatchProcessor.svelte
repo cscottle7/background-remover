@@ -102,15 +102,31 @@
     const validFiles = files.filter(validateFile);
     
     if (validFiles.length === 0) {
-      dispatch('error', { message: 'No valid image files selected' });
+      dispatch('error', { message: 'No valid image files selected. Please select PNG, JPG, or WebP images under 10MB.' });
       return;
     }
     
-    if (selectedFiles.length + validFiles.length > maxFiles) {
-      dispatch('error', { 
-        message: `Maximum ${maxFiles} files allowed. Please remove some files first.` 
-      });
-      return;
+    // Check if adding these files would exceed the limit
+    const totalAfterAdding = selectedFiles.length + validFiles.length;
+    if (totalAfterAdding > maxFiles) {
+      const canAdd = maxFiles - selectedFiles.length;
+      if (canAdd <= 0) {
+        dispatch('error', { 
+          message: `Maximum ${maxFiles} files allowed. Please remove some files before adding more.` 
+        });
+        return;
+      } else {
+        dispatch('error', { 
+          message: `Can only add ${canAdd} more file${canAdd === 1 ? '' : 's'}. You tried to add ${validFiles.length} files, but the maximum is ${maxFiles} total.` 
+        });
+        return;
+      }
+    }
+    
+    // Warn user about invalid files if some were filtered out
+    if (files.length !== validFiles.length) {
+      const invalidCount = files.length - validFiles.length;
+      console.warn(`${invalidCount} file${invalidCount === 1 ? '' : 's'} skipped (invalid format or too large)`);
     }
     
     // Add to selected files

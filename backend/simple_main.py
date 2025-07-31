@@ -3,7 +3,7 @@ Simplified CharacterCut Backend API for Development
 Minimal FastAPI application using only rembg for background removal
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -15,7 +15,8 @@ import time
 import uuid
 import base64
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,13 +51,27 @@ async def add_cors_headers(request: Request, call_next):
     response.headers["Access-Control-Max-Age"] = "86400"
     return response
 
-# Initialize rembg session once at startup
-try:
-    rembg_session = new_session("isnet-general-use")
-    logger.info("Successfully initialized rembg session with isnet-general-use model")
-except Exception as e:
-    logger.warning(f"Failed to initialize isnet-general-use, falling back to u2net: {e}")
-    rembg_session = new_session("u2net")
+# Initialize rembg session once at startup with fallback models
+FALLBACK_MODELS = ["u2net", "silueta", "u2netp"]
+rembg_session = None
+current_model = None
+
+for model_name in ["u2net"] + FALLBACK_MODELS:
+    try:
+        logger.info(f"Attempting to initialize rembg session with {model_name} model...")
+        rembg_session = new_session(model_name)
+        current_model = model_name
+        logger.info(f"Successfully initialized rembg session with {model_name} model")
+        break
+    except Exception as e:
+        logger.warning(f"Failed to initialize {model_name} model: {e}")
+        if model_name == FALLBACK_MODELS[-1]:  # Last fallback model
+            logger.error("All model initialization attempts failed!")
+            rembg_session = None
+        continue
+
+if rembg_session is None:
+    logger.error("CRITICAL: No rembg models could be initialized")
 
 # Simple in-memory storage for processed images (dev only)
 processed_images = {}
@@ -135,25 +150,53 @@ async def process_image(file: UploadFile = File(...), session_id: Optional[str] 
         
         logger.info(f"Processing image: {file.filename}, size: {len(image_data)} bytes")
         
+        # Check if we have a working model
+        if rembg_session is None:
+            logger.error("No rembg model is available for processing")
+            raise HTTPException(
+                status_code=503,
+                detail="Background removal service is currently unavailable. Please try again later."
+            )
+        
         # Process with rembg - more robust error handling
         try:
+            logger.info(f"Processing with {current_model} model...")
             processed_image_bytes = remove(
                 image_data,
                 session=rembg_session,
                 force_return_bytes=True
             )
-            logger.info(f"rembg processing successful, output size: {len(processed_image_bytes)} bytes")
+            logger.info(f"rembg processing successful with {current_model}, output size: {len(processed_image_bytes)} bytes")
         except Exception as rembg_error:
-            logger.error(f"rembg processing failed: {str(rembg_error)}")
-            # Try without session as fallback
-            try:
-                processed_image_bytes = remove(image_data)
-                logger.info(f"rembg fallback processing successful")
-            except Exception as fallback_error:
-                logger.error(f"rembg fallback also failed: {str(fallback_error)}")
+            logger.error(f"rembg processing failed with {current_model}: {str(rembg_error)}")
+            
+            # Try to reinitialize with a different model if current one fails
+            logger.info("Attempting to reinitialize with fallback models...")
+            for fallback_model in FALLBACK_MODELS:
+                if fallback_model == current_model:
+                    continue  # Skip the model that just failed
+                try:
+                    logger.info(f"Trying fallback model: {fallback_model}")
+                    fallback_session = new_session(fallback_model)
+                    processed_image_bytes = remove(
+                        image_data,
+                        session=fallback_session,
+                        force_return_bytes=True
+                    )
+                    logger.info(f"Fallback processing successful with {fallback_model}")
+                    # Update global session to the working one
+                    globals()['rembg_session'] = fallback_session
+                    globals()['current_model'] = fallback_model
+                    break
+                except Exception as fallback_error:
+                    logger.warning(f"Fallback model {fallback_model} also failed: {fallback_error}")
+                    continue
+            else:
+                # If we get here, all models failed
+                logger.error("All models failed to process the image")
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Background removal failed: {str(fallback_error)}"
+                    detail=f"Processing failed: {str(rembg_error)}"
                 )
         
         processing_time = time.time() - start_time
@@ -232,6 +275,240 @@ async def download_image(processing_id: str):
         logger.error(f"Download failed for {processing_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Download failed")
 
+@app.post("/simple-process")
+async def simple_process_image(file: UploadFile = File(...), session_id: Optional[str] = None):
+    """
+    Simple process endpoint - alias for /process to match frontend expectations
+    """
+    return await process_image(file, session_id)
+
+@app.post("/refine")
+async def refine_image(
+    refined_image: UploadFile = File(...),
+    original_processing_id: str = Form(None)
+):
+    """
+    Refine processed image with manual corrections
+    Accepts the refined image data from canvas editing
+    """
+    start_time = time.time()
+    processing_id = str(uuid.uuid4())
+    
+    logger.info(f"=== REFINE REQUEST START ===")
+    logger.info(f"Processing ID: {processing_id}")
+    logger.info(f"Original Processing ID: {original_processing_id}")
+    logger.info(f"Refined file: {refined_image.filename}")
+    logger.info(f"Content Type: {refined_image.content_type}")
+    
+    try:
+        # Validate file type
+        if not refined_image.content_type or not refined_image.content_type.startswith('image/'):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file type. Please upload an image file."
+            )
+        
+        # Read refined image data
+        refined_image_data = await refined_image.read()
+        
+        if len(refined_image_data) > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(
+                status_code=400,
+                detail="File too large. Maximum size is 50MB."
+            )
+        
+        logger.info(f"Processing refined image: {refined_image.filename}, size: {len(refined_image_data)} bytes")
+        
+        # For refinement, we just store the refined image as-is since it's already processed
+        # The frontend has already done the canvas editing and created the final result
+        processing_time = time.time() - start_time
+        logger.info(f"Refined image processed successfully in {processing_time:.2f} seconds")
+        
+        # Store refined image in memory with expiration
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        processed_images[processing_id] = {
+            "data": refined_image_data,
+            "expires_at": expires_at,
+            "filename": f"refined_{refined_image.filename}"
+        }
+        
+        # Return JSON response matching ProcessingResponse interface
+        response_data = {
+            "processing_id": processing_id,
+            "session_id": original_processing_id or "refined",
+            "download_url": f"http://localhost:8000/download/{processing_id}",
+            "processing_time": processing_time,
+            "expires_at": expires_at.isoformat() + "Z"
+        }
+        
+        logger.info(f"=== REFINE REQUEST SUCCESS ===")
+        logger.info(f"Returning JSON response: {response_data}")
+        
+        return JSONResponse(
+            content=response_data,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(f"Refinement failed after {processing_time:.2f}s: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Image refinement failed: {str(e)}"
+        )
+
+@app.post("/process-batch")
+async def process_batch_images(
+    request: Request,
+    files: List[UploadFile] = File(...)
+):
+    """
+    Process multiple images to remove backgrounds
+    Implements concurrent processing with individual error handling
+    Maximum 10 images per batch to maintain performance
+    """
+    start_time = datetime.utcnow()
+    batch_id = str(uuid.uuid4())
+    
+    logger.info(f"=== BATCH PROCESSING REQUEST ===")
+    logger.info(f"Batch ID: {batch_id}")
+    logger.info(f"Number of files: {len(files)}")
+    
+    # Validate batch size
+    if len(files) > 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 10 images allowed per batch"
+        )
+    
+    if len(files) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one image is required"
+        )
+    
+    try:
+        # Process all images concurrently
+        async def process_single_image(file: UploadFile, index: int):
+            processing_id = f"{batch_id}_{index}"
+            
+            try:
+                # Basic validation
+                if not file.content_type or not file.content_type.startswith('image/'):
+                    return {
+                        "index": index,
+                        "processing_id": processing_id,
+                        "success": False,
+                        "error": "Invalid file type",
+                        "filename": file.filename
+                    }
+                
+                # Read image data
+                image_data = await file.read()
+                
+                if len(image_data) > 10 * 1024 * 1024:  # 10MB limit
+                    return {
+                        "index": index,
+                        "processing_id": processing_id,
+                        "success": False,
+                        "error": "File too large (max 10MB)",
+                        "filename": file.filename
+                    }
+                
+                # Process with rembg
+                if rembg_session is None:
+                    return {
+                        "index": index,
+                        "processing_id": processing_id,
+                        "success": False,
+                        "error": "Background removal service unavailable",
+                        "filename": file.filename
+                    }
+                
+                processed_image_bytes = remove(
+                    image_data,
+                    session=rembg_session,
+                    force_return_bytes=True
+                )
+                
+                # Store in memory (simplified)
+                expires_at = datetime.utcnow() + timedelta(hours=1)
+                simple_processed_images[processing_id] = {
+                    "data": processed_image_bytes,
+                    "expires_at": expires_at,
+                    "filename": f"processed_{file.filename}.png"
+                }
+                
+                return {
+                    "index": index,
+                    "processing_id": processing_id,
+                    "success": True,
+                    "download_url": f"http://localhost:8000/download/{processing_id}",
+                    "filename": file.filename,
+                    "expires_at": expires_at.isoformat() + "Z"
+                }
+                
+            except Exception as e:
+                logger.error(f"Batch processing failed for image {index}: {str(e)}")
+                return {
+                    "index": index,
+                    "processing_id": processing_id,
+                    "success": False,
+                    "error": str(e),
+                    "filename": file.filename
+                }
+        
+        # Execute all processing tasks concurrently
+        results = await asyncio.gather(
+            *[process_single_image(file, i) for i, file in enumerate(files)],
+            return_exceptions=True
+        )
+        
+        # Handle any exceptions from gather
+        processed_results = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                processed_results.append({
+                    "index": i,
+                    "processing_id": f"{batch_id}_{i}",
+                    "success": False,
+                    "error": str(result),
+                    "filename": files[i].filename if i < len(files) else f"image_{i}"
+                })
+            else:
+                processed_results.append(result)
+        
+        # Calculate metrics
+        total_processing_time = (datetime.utcnow() - start_time).total_seconds()
+        successful_count = sum(1 for r in processed_results if r["success"])
+        
+        logger.info(f"Batch processing completed: {successful_count}/{len(files)} successful in {total_processing_time:.2f}s")
+        
+        return JSONResponse(content={
+            "batch_id": batch_id,
+            "session_id": "batch-session",
+            "total_images": len(files),
+            "successful_count": successful_count,
+            "failed_count": len(files) - successful_count,
+            "processing_time": total_processing_time,
+            "results": processed_results
+        })
+        
+    except Exception as e:
+        logger.error(f"Batch processing failed for {batch_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Batch processing failed. Please try again."
+        )
+
 @app.get("/")
 async def root():
     """Root endpoint"""
@@ -241,6 +518,8 @@ async def root():
         "endpoints": {
             "health": "/health",
             "process": "/process (POST with image file)",
+            "process-batch": "/process-batch (POST with multiple image files)",
+            "refine": "/refine (POST with refined image)",
             "download": "/download/{processing_id}",
             "docs": "/docs"
         }
