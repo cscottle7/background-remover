@@ -10,10 +10,11 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 # from mangum import Mangum  # Only needed for AWS Lambda
 import os
 import logging
-from typing import Optional
+from typing import Optional, List
 import uuid
 from datetime import datetime, timedelta
 import time
+import asyncio
 from collections import defaultdict
 
 from .services.background_removal import BackgroundRemovalService
@@ -109,7 +110,11 @@ async def process_image(
     request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    crop_x: Optional[float] = Form(None),
+    crop_y: Optional[float] = Form(None),
+    crop_width: Optional[float] = Form(None),
+    crop_height: Optional[float] = Form(None)
 ):
     """
     Process image to remove background
@@ -147,11 +152,23 @@ async def process_image(
         # Read image data
         image_data = await file.read()
         
+        # Prepare crop data if provided
+        crop_data = None
+        if all(param is not None for param in [crop_x, crop_y, crop_width, crop_height]):
+            crop_data = {
+                'x': crop_x,
+                'y': crop_y,
+                'width': crop_width,
+                'height': crop_height
+            }
+            logger.info(f"Crop data provided: {crop_data}")
+        
         # Process image with background removal (include session for A/B testing)
         processed_image = await background_removal_service.remove_background(
             image_data,
             processing_id=processing_id,
-            session_hash=session_id
+            session_hash=session_id,
+            crop_data=crop_data
         )
         
         # Store processed image with 1-hour expiration
@@ -205,6 +222,178 @@ async def process_image(
         raise HTTPException(
             status_code=500,
             detail="Image processing failed. Please try again."
+        )
+
+@app.post("/process-batch")
+async def process_batch_images(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    session_id: Optional[str] = None
+):
+    """
+    Process multiple images to remove backgrounds
+    Implements concurrent processing with individual error handling
+    Maximum 10 images per batch to maintain performance
+    """
+    start_time = datetime.utcnow()
+    batch_id = str(uuid.uuid4())
+    
+    # Get client IP for rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    
+    # Enhanced rate limiting for batch processing
+    if not rate_limit_check(client_ip, max_requests=2, window_seconds=120):
+        raise HTTPException(
+            status_code=429,
+            detail="Batch processing rate limit exceeded. Please wait before trying again."
+        )
+    
+    # Validate batch size
+    if len(files) > 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 10 images allowed per batch"
+        )
+    
+    if len(files) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one image is required"
+        )
+    
+    # Generate session ID if not provided
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    
+    try:
+        # Process all images concurrently
+        async def process_single_image(file: UploadFile, index: int):
+            processing_id = f"{batch_id}_{index}"
+            
+            try:
+                # Validate input file
+                validation_result = await validate_image_file(file)
+                if not validation_result.is_valid:
+                    return {
+                        "index": index,
+                        "processing_id": processing_id,
+                        "success": False,
+                        "error": f"Invalid image file: {validation_result.error}",
+                        "filename": file.filename
+                    }
+                
+                # Read image data
+                image_data = await file.read()
+                
+                # Process image with background removal
+                processed_image = await background_removal_service.remove_background(
+                    image_data,
+                    processing_id=processing_id,
+                    session_hash=session_id
+                )
+                
+                # Store processed image with 1-hour expiration
+                storage_url = await storage_service.store_image(
+                    processed_image,
+                    processing_id,
+                    expires_in_hours=1
+                )
+                
+                # Schedule cleanup task
+                background_tasks.add_task(
+                    storage_service.schedule_cleanup,
+                    processing_id,
+                    expires_at=datetime.utcnow() + timedelta(hours=1)
+                )
+                
+                return {
+                    "index": index,
+                    "processing_id": processing_id,
+                    "success": True,
+                    "download_url": storage_url,
+                    "filename": file.filename,
+                    "expires_at": datetime.utcnow() + timedelta(hours=1)
+                }
+                
+            except Exception as e:
+                logger.error(f"Batch processing failed for image {index}: {str(e)}")
+                return {
+                    "index": index,
+                    "processing_id": processing_id,
+                    "success": False,
+                    "error": str(e),
+                    "filename": file.filename
+                }
+        
+        # Execute all processing tasks concurrently
+        results = await asyncio.gather(
+            *[process_single_image(file, i) for i, file in enumerate(files)],
+            return_exceptions=True
+        )
+        
+        # Handle any exceptions from gather
+        processed_results = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                processed_results.append({
+                    "index": i,
+                    "processing_id": f"{batch_id}_{i}",
+                    "success": False,
+                    "error": str(result),
+                    "filename": files[i].filename if i < len(files) else f"image_{i}"
+                })
+            else:
+                processed_results.append(result)
+        
+        # Calculate metrics
+        total_processing_time = (datetime.utcnow() - start_time).total_seconds()
+        successful_count = sum(1 for r in processed_results if r["success"])
+        
+        # Log batch metrics
+        await log_processing_metrics(
+            processing_id=batch_id,
+            session_id=session_id,
+            processing_time=total_processing_time,
+            input_size=0,  # Files already processed, size would need tracking
+            output_size=0,  # Would need to calculate from successful results
+            success=successful_count > 0,
+            batch_size=len(files),
+            successful_count=successful_count
+        )
+        
+        return JSONResponse(content={
+            "batch_id": batch_id,
+            "session_id": session_id,
+            "total_images": len(files),
+            "successful_count": successful_count,
+            "failed_count": len(files) - successful_count,
+            "processing_time": total_processing_time,
+            "results": processed_results
+        })
+        
+    except Exception as e:
+        logger.error(f"Batch processing failed for {batch_id}: {str(e)}")
+        
+        # Log error metrics
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        await log_processing_metrics(
+            processing_id=batch_id,
+            session_id=session_id or "unknown",
+            processing_time=processing_time,
+            input_size=0,
+            output_size=0,
+            success=False,
+            error=str(e),
+            batch_size=len(files)
+        )
+        
+        raise HTTPException(
+            status_code=500,
+            detail="Batch processing failed. Please try again."
         )
 
 @app.get("/download/{processing_id}")
@@ -297,10 +486,102 @@ async def get_ab_test_analysis_endpoint():
         logger.error(f"A/B test analysis failed: {str(e)}")
         raise HTTPException(status_code=500, detail="A/B test analysis failed")
 
+@app.post("/refine")
+async def refine_image(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    original_processing_id: str = Form(...),
+    refined_image: UploadFile = File(...)
+):
+    """
+    Refine processed image with manual corrections
+    Accepts the refined image data from canvas editing
+    """
+    start_time = datetime.utcnow()
+    processing_id = str(uuid.uuid4())
+    
+    # Get client IP for rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    
+    # Rate limiting check
+    if not rate_limit_check(client_ip, max_requests=5, window_seconds=60):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Please wait before trying again."
+        )
+    
+    try:
+        # Validate input file
+        validation_result = await validate_image_file(refined_image)
+        if not validation_result.is_valid:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid refined image: {validation_result.error}"
+            )
+        
+        # Read refined image data
+        refined_image_data = await refined_image.read()
+        
+        # Store refined image with 1-hour expiration
+        storage_url = await storage_service.store_image(
+            refined_image_data,
+            processing_id,
+            expires_in_hours=1
+        )
+        
+        # Schedule cleanup task
+        background_tasks.add_task(
+            storage_service.schedule_cleanup,
+            processing_id,
+            expires_at=datetime.utcnow() + timedelta(hours=1)
+        )
+        
+        # Log metrics for monitoring
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        await log_processing_metrics(
+            processing_id=processing_id,
+            session_id=f"refine_{original_processing_id}",
+            processing_time=processing_time,
+            input_size=len(refined_image_data),
+            output_size=len(refined_image_data),
+            success=True
+        )
+        
+        return ProcessingResponse(
+            processing_id=processing_id,
+            session_id=f"refine_{original_processing_id}",
+            download_url=storage_url,
+            processing_time=processing_time,
+            expires_at=datetime.utcnow() + timedelta(hours=1)
+        )
+        
+    except Exception as e:
+        logger.error(f"Refinement failed for {processing_id}: {str(e)}")
+        
+        # Log error metrics
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        await log_processing_metrics(
+            processing_id=processing_id,
+            session_id=f"refine_{original_processing_id}",
+            processing_time=processing_time,
+            input_size=len(refined_image_data) if 'refined_image_data' in locals() else 0,
+            output_size=0,
+            success=False,
+            error=str(e)
+        )
+        
+        raise HTTPException(
+            status_code=500,
+            detail="Image refinement failed. Please try again."
+        )
+
 @app.post("/simple-process")
 async def simple_process_image(
     file: UploadFile = File(...), 
-    model: str = Form("isnet-general-use"),
+    model: str = Form("u2net"),
     session_id: str = Form(None)
 ):
     """

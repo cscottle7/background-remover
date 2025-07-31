@@ -14,6 +14,8 @@
   import FeedbackCollection from '$lib/components/FeedbackCollection.svelte';
   import AnalyticsDashboard from '$lib/components/AnalyticsDashboard.svelte';
   import ModelSelector from '$lib/components/ModelSelector.svelte';
+  import ImageRefinementEditor from '$lib/components/ImageRefinementEditor.svelte';
+  import BatchProcessor from '$lib/components/BatchProcessor.svelte';
   import { appState, appActions } from '$lib/stores/appState';
   import { realTimeStatusService } from '$lib/services/realTimeStatus';
   import { inputActions } from '$lib/stores/inputState';
@@ -44,6 +46,15 @@
   let showFeedbackCollection = false;
   let showAnalyticsDashboard = false;
   let npsShownForSession = false;
+  
+  // Refinement state
+  let showRefinementEditor = false;
+  let isRefining = false;
+  let refinementMessage = '';
+  let refinementProgress = 0;
+  
+  // Batch processing state
+  let showBatchProcessor = false;
   
   // Reactive state
   $: currentImage = $appState.currentImage;
@@ -289,7 +300,7 @@
   }
   
   /**
-   * Handle preview actions (download or continue)
+   * Handle preview actions (download, continue, or refine)
    */
   function handlePreviewAction(event: CustomEvent) {
     const { action } = event.detail;
@@ -298,7 +309,100 @@
       downloadResult();
     } else if (action === 'continue') {
       processAnother();
+    } else if (action === 'refine') {
+      showRefinementEditor = true;
     }
+  }
+  
+  /**
+   * Handle refinement editor events
+   */
+  async function handleRefinementRefined(event: CustomEvent) {
+    const { refinedImage } = event.detail;
+    
+    console.log('=== REFINEMENT HANDLER ===');
+    console.log('Received refined image:', refinedImage ? 'YES' : 'NO');
+    console.log('Current result:', result);
+    
+    if (!result?.processing_id) {
+      console.error('No processing ID available for refinement');
+      return;
+    }
+    
+    try {
+      isRefining = true;
+      showRefinementEditor = false;
+      refinementProgress = 0;
+      refinementMessage = 'Processing refined image...';
+      
+      console.log('Starting API refinement with processing ID:', result.processing_id);
+      
+      // Use API service to upload refined image
+      const refinedResult = await apiService.refineImage(
+        result.processing_id,
+        refinedImage,
+        (progress, message) => {
+          console.log('Refinement progress:', progress, message);
+          refinementProgress = progress;
+          refinementMessage = message;
+          appActions.updateProgress(progress, message);
+        }
+      );
+      
+      console.log('API refinement successful:', refinedResult);
+      
+      // Update result with refined version
+      result = refinedResult;
+      processedImageUrl = refinedResult.download_url;
+      
+      // Update app state
+      appActions.completeProcessing(
+        refinedResult.download_url,
+        refinedResult.processing_time
+      );
+      
+      // Auto-copy refined result to clipboard
+      await copyResultToClipboard(refinedResult.download_url);
+      
+      // Track successful refinement
+      await analyticsService.trackTaskCompletion(true, refinedResult.processing_time);
+      
+      console.log('Refinement completed successfully');
+      
+    } catch (err) {
+      console.error('=== REFINEMENT HANDLER ERROR ===');
+      console.error('Error object:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error instanceof Error:', err instanceof Error);
+      
+      if (err instanceof Error) {
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+      }
+      
+      const errorMessage = err instanceof Error ? err.message : 'Refinement failed';
+      error = errorMessage;
+      appActions.setError(errorMessage);
+      
+      // Track failed refinement
+      await analyticsService.trackTaskCompletion(false, 0, errorMessage);
+      
+    } finally {
+      isRefining = false;
+      refinementProgress = 0;
+      refinementMessage = '';
+    }
+  }
+  
+  function handleRefinementCancel() {
+    showRefinementEditor = false;
+  }
+  
+  function handleRefinementError(event: CustomEvent) {
+    const { message } = event.detail;
+    error = message;
+    showRefinementEditor = false;
+    appActions.setError(message);
   }
   
   /**
@@ -475,6 +579,24 @@
   function handleAnalyticsDashboardClose() {
     showAnalyticsDashboard = false;
   }
+  
+  // Batch processing handlers
+  function handleBatchCompleted(event: CustomEvent) {
+    const { batchResults } = event.detail;
+    console.log('Batch processing completed:', batchResults);
+    // Track batch completion
+    analyticsService.trackBatchCompletion(batchResults.successful_count, batchResults.total_images);
+  }
+  
+  function handleBatchError(event: CustomEvent) {
+    const { message } = event.detail;
+    console.error('Batch processing error:', message);
+    error = message;
+  }
+  
+  function handleBatchClose() {
+    showBatchProcessor = false;
+  }
 </script>
 
 <svelte:head>
@@ -524,10 +646,23 @@
             on:error={handleInputError}
             disabled={processing}
           />
+          
+          <!-- Batch Processing Button -->
+          <div class="text-center mt-6">
+            <button
+              on:click={() => showBatchProcessor = true}
+              class="btn btn-outline border-magic-400 text-magic-400 hover:bg-magic-400 hover:text-white py-2 px-4 rounded-lg font-medium text-sm"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+              </svg>
+              Process Multiple Images
+            </button>
+          </div>
         </div>
       {/if}
       
-      {#if processing && currentImageData}
+      {#if (processing || isRefining) && currentImageData}
         <!-- Processing State with Magic Scanline -->
         <div class="max-w-4xl mx-auto">
           <div class="processing-container">
@@ -535,9 +670,9 @@
             <!-- Enhanced Scanline Processor Component -->
             <ScanlineProcessor
               image={currentImageData}
-              isProcessing={processing}
-              processingProgress={processingProgress}
-              processingMessage={processingMessage || 'Processing your character...'}
+              isProcessing={processing || isRefining}
+              processingProgress={isRefining ? refinementProgress : processingProgress}
+              processingMessage={isRefining ? refinementMessage : (processingMessage || 'Processing your character...')}
               processedResult={processedImageUrl}
               on:animationComplete={() => {
                 console.log('Scanline animation completed');
@@ -551,8 +686,8 @@
             <div class="absolute bottom-4 left-4 right-4 z-50">
               <ProcessingFeedback
                 status="processing"
-                progress={processingProgress}
-                message={processingMessage || 'Processing your character...'}
+                progress={isRefining ? refinementProgress : processingProgress}
+                message={isRefining ? refinementMessage : (processingMessage || 'Processing your character...')}
                 attemptNumber={attemptNumber}
                 showDetails={attemptNumber > 1}
               />
@@ -760,6 +895,26 @@
   </button>
 {/if}
 
+<!-- Image Refinement Editor -->
+{#if showRefinementEditor && currentImageData && result}
+  <ImageRefinementEditor
+    originalImage={currentImageData.preview}
+    processedImage={processedImageUrl || ''}
+    isVisible={showRefinementEditor}
+    on:refined={handleRefinementRefined}
+    on:cancel={handleRefinementCancel}
+    on:error={handleRefinementError}
+  />
+{/if}
+
+<!-- Batch Processor -->
+<BatchProcessor
+  isVisible={showBatchProcessor}
+  on:completed={handleBatchCompleted}
+  on:error={handleBatchError}
+  on:close={handleBatchClose}
+/>
+
 <style>
   .page-container {
     min-height: calc(100vh - 140px); /* Account for header/footer */
@@ -774,7 +929,7 @@
   .processing-container {
     position: relative;
     width: 100%;
-    max-width: 600px;
+    max-width: 900px;
     margin: 0 auto;
     min-height: 400px;
     background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(38, 38, 38, 0.9) 100%);

@@ -67,7 +67,8 @@ class BackgroundRemovalService:
         image_data: bytes, 
         processing_id: str,
         session_hash: Optional[str] = None,
-        retry_count: int = 0
+        retry_count: int = 0,
+        crop_data: Optional[Dict[str, float]] = None
     ) -> bytes:
         """
         Remove background from image with automatic retry and fallback
@@ -97,6 +98,21 @@ class BackgroundRemovalService:
             input_image = Image.open(io.BytesIO(image_data))
             if input_image.mode not in ["RGB", "RGBA"]:
                 input_image = input_image.convert("RGB")
+            
+            # Apply crop preprocessing if provided
+            if crop_data:
+                await self._update_processing_status(
+                    processing_id, 
+                    "processing", 
+                    20, 
+                    "Cropping image..."
+                )
+                input_image = await self._apply_crop(input_image, crop_data)
+                
+                # Convert cropped image back to bytes for processing
+                crop_buffer = io.BytesIO()
+                input_image.save(crop_buffer, format="PNG")
+                image_data = crop_buffer.getvalue()
             
             await self._update_processing_status(
                 processing_id, 
@@ -328,6 +344,32 @@ class BackgroundRemovalService:
         except Exception as multi_error:
             logger.error(f"Multi-library processing failed: {str(multi_error)}")
             raise Exception(f"All processing methods exhausted. Last error: {str(multi_error)}")
+    
+    async def _apply_crop(self, image: Image.Image, crop_data: Dict[str, float]) -> Image.Image:
+        """Apply crop preprocessing to input image"""
+        try:
+            # Extract crop coordinates
+            x = int(crop_data.get('x', 0))
+            y = int(crop_data.get('y', 0))
+            width = int(crop_data.get('width', image.width))
+            height = int(crop_data.get('height', image.height))
+            
+            # Validate crop bounds
+            x = max(0, min(x, image.width))
+            y = max(0, min(y, image.height))
+            width = min(width, image.width - x)
+            height = min(height, image.height - y)
+            
+            # Apply crop
+            crop_box = (x, y, x + width, y + height)
+            cropped_image = image.crop(crop_box)
+            
+            logger.info(f"Applied crop: {crop_box} to image of size {image.size}")
+            return cropped_image
+            
+        except Exception as e:
+            logger.warning(f"Crop operation failed: {e}, using original image")
+            return image
     
     async def _optimize_output(self, image_data: bytes) -> bytes:
         """Optimize output image for web delivery"""
