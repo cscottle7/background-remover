@@ -1,0 +1,250 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Global styles for CharacterCut */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-dark-bg text-dark-text;
+    background-image: 
+      radial-gradient(circle at 25% 25%, #1a1a1a 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, #0f0f0f 0%, transparent 50%);
+  }
+  
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-border rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-text-muted;
+  }
+}
+
+@layer components {
+  /* Magic button styling */
+  .btn-magic {
+    @apply bg-gradient-to-r from-magic-400 to-magic-600 text-white font-semibold;
+    @apply hover:from-magic-500 hover:to-magic-700 transform hover:scale-105;
+    @apply transition-all duration-200 shadow-lg hover:shadow-magic-400/25;
+  }
+  
+  /* Scanline effect for processing animation */
+  .scanline-container {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      theme('colors.magic.400') 30%, 
+      theme('colors.magic.300') 50%, 
+      theme('colors.magic.400') 70%, 
+      transparent 100%);
+    box-shadow: 
+      0 0 10px theme('colors.magic.400'),
+      0 0 20px theme('colors.magic.400/50'),
+      0 0 30px theme('colors.magic.400/25');
+    animation: scanline 3s ease-in-out;
+  }
+  
+  @keyframes scanline {
+    0% { 
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% { 
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  
+  /* Background dissolution effect during processing */
+  .dissolving-background {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .dissolving-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 255, 136, 0.1) 2px,
+      rgba(0, 255, 136, 0.1) 4px
+    );
+    animation: dissolve 3s ease-in-out;
+    pointer-events: none;
+  }
+  
+  @keyframes dissolve {
+    0% { 
+      opacity: 0;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.02);
+    }
+    100% { 
+      opacity: 0;
+      transform: scale(1.05);
+    }
+  }
+  
+  /* Drag and drop zone styling */
+  .dropzone {
+    @apply border-2 border-dashed border-dark-border bg-dark-surface;
+    @apply transition-all duration-300 ease-in-out;
+    @apply hover:border-dark-text-muted hover:bg-dark-elevated;
+  }
+  
+  .dropzone-active {
+    @apply border-magic-400 bg-magic-400/10;
+    @apply shadow-2xl shadow-magic-400/30;
+    transform: scale(1.02) rotateZ(0.5deg);
+    border-style: solid;
+  }
+  
+  .dropzone-hover {
+    @apply border-magic-300 bg-magic-300/5;
+    @apply transform scale-[1.01];
+  }
+  
+  /* Pulse glow animation for active dropzone */
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 
+        0 0 20px rgba(0, 255, 136, 0.3),
+        0 0 40px rgba(0, 255, 136, 0.1),
+        inset 0 0 20px rgba(0, 255, 136, 0.05);
+    }
+    50% {
+      box-shadow: 
+        0 0 30px rgba(0, 255, 136, 0.5),
+        0 0 60px rgba(0, 255, 136, 0.2),
+        inset 0 0 30px rgba(0, 255, 136, 0.1);
+    }
+  }
+  
+  /* Processing state animations */
+  .processing-shimmer {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(255, 255, 255, 0.1) 50%, 
+      transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  /* Character placement guide */
+  .character-guide {
+    background-image: 
+      radial-gradient(circle at center, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+    background-size: 100px 100px;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  
+  /* Glass morphism effect for cards */
+  .glass-card {
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Magic reveal animation */
+  .magic-reveal {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .magic-reveal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(0, 255, 136, 0.3) 50%, 
+      transparent 100%);
+    animation: reveal 1.5s ease-in-out;
+  }
+  
+  @keyframes reveal {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+}
+
+@layer utilities {
+  /* Text gradients for magical effects */
+  .text-magic-gradient {
+    background: linear-gradient(135deg, 
+      theme('colors.magic.400') 0%, 
+      theme('colors.magic.600') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Glow effects */
+  .glow-magic {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+  }
+  
+  .glow-magic-strong {
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.5);
+  }
+  
+  /* Hide scrollbar utility */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

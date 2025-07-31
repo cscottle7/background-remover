@@ -1,0 +1,106 @@
+service: charactercut-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  memorySize: 3008  # Increased for ML processing performance
+  timeout: 29  # Just under API Gateway 30s limit
+  
+  environment:
+    STAGE: ${self:provider.stage}
+    REDIS_URL: ${env:REDIS_URL, ''}
+    REMBG_MODEL_CACHE: /tmp/rembg_models
+    
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+      Resource:
+        - "arn:aws:s3:::charactercut-assets-${self:provider.stage}/*"
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+
+functions:
+  api:
+    handler: src.main.handler
+    reservedConcurrency: 20  # Limit concurrent executions for cost control
+    provisionedConcurrency: 2  # Keep instances warm for performance
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+      - httpApi:
+          path: /
+          method: ANY
+    layers:
+      - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p311-Pillow:1
+    environment:
+      # Session-aware optimization for rembg
+      REMBG_SESSION_REUSE: true
+      PROCESSING_TIMEOUT: 25  # 4 seconds under function timeout
+    
+  cleanup:
+    handler: src.handlers.cleanup.handler
+    memorySize: 512  # Smaller memory for cleanup function
+    timeout: 300    # 5 minutes for cleanup operations
+    events:
+      - schedule:
+          rate: rate(1 hour)
+          description: 'Clean up processed images older than 1 hour'
+
+resources:
+  Resources:
+    AssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: charactercut-assets-${self:provider.stage}
+        LifecycleConfiguration:
+          Rules:
+            - Id: DeleteProcessedImages
+              Status: Enabled
+              ExpirationInDays: 1
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - "*"
+              AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    layer: true
+    slim: true  # Reduce package size
+    strip: false  # Keep debug symbols for troubleshooting
+    
+  # Binary media types for API Gateway
+  apiGatewayRestApi:
+    binaryMediaTypes:
+      - 'image/jpeg'
+      - 'image/png' 
+      - 'image/webp'
+      - 'image/bmp'
+      - 'image/tiff'
+      - 'multipart/form-data'
+      - '*/*'

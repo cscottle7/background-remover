@@ -1,0 +1,35 @@
+#.claude/settings.toml
+# This file configures project-level settings, including automated hooks.
+# Hooks act as event-driven guardrails to enforce code quality, run tests, and perform security checks.
+
+# --- Frontend Code Quality Hook ---
+# Automatically lints and formats any changed TypeScript/TSX file.
+[[hooks]]
+event = "on_file_change"
+[hooks.matcher]
+file_path = "frontend/src/**/*.{ts,tsx}"
+command = "npx eslint --fix $CLAUDE_FILE_PATH && npx prettier --write $CLAUDE_FILE_PATH"
+
+# --- Backend Code Quality Hook (Linting & Formatting) ---
+# Automatically formats and lints any changed Python file.
+[[hooks]]
+event = "on_file_change"
+[hooks.matcher]
+file_path = "backend/**/*.py"
+command = "black $CLAUDE_FILE_PATH && ruff check --fix $CLAUDE_FILE_PATH"
+
+# --- Backend Security Hook ---
+# Runs a lightweight static analysis scanner on file change as a first line of defense.
+[[hooks]]
+event = "on_file_change"
+[hooks.matcher]
+file_path = "backend/**/*.py"
+command = "bandit $CLAUDE_FILE_PATH"
+
+# --- Backend Unit Test Hook ---
+# Automatically runs the pytest suite when a backend source file is changed.
+[[hooks]]
+event = "on_file_change"
+[hooks.matcher]
+file_path = "backend/app/**/*.py"
+command = "pytest"

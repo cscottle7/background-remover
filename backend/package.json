@@ -1,0 +1,31 @@
+{
+  "name": "charactercut-backend",
+  "version": "1.0.0",
+  "description": "CharacterCut backend API for AI-powered background removal",
+  "scripts": {
+    "dev": "uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+    "start": "uvicorn src.main:app --host 0.0.0.0 --port 8000",
+    "deploy": "serverless deploy",
+    "deploy:prod": "serverless deploy --stage prod",
+    "logs": "serverless logs -f api -t",
+    "test": "pytest tests/ -v",
+    "test:coverage": "pytest tests/ --cov=src --cov-report=html",
+    "lint": "flake8 src tests",
+    "format": "black src tests",
+    "type-check": "mypy src"
+  },
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-python-requirements": "^6.0.0",
+    "serverless-offline": "^13.3.0"
+  },
+  "keywords": [
+    "background-removal",
+    "ai",
+    "image-processing",
+    "serverless",
+    "aws-lambda"
+  ],
+  "author": "CharacterCut Team",
+  "license": "MIT"
+}

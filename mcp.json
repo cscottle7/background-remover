@@ -1,0 +1,16 @@
+{
+    "servers": [
+      {
+        "name": "charactercut-backend",
+        "command": "python",
+        "args": ["-m", "uvicorn", "main:app", "--reload"],
+        "cwd": "C:\\Users\\cscot\\Documents\\Apps\\Remove background\\backend"
+      },
+      {
+        "name": "charactercut-frontend",
+        "command": "npm",
+        "args": ["run", "dev"],
+        "cwd": "C:\\Users\\cscot\\Documents\\Apps\\Remove background\\frontend"
+      }
+    ]
+  }
