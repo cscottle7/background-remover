@@ -29,16 +29,19 @@
   let previewCtx: CanvasRenderingContext2D;
   
   // Tool state
-  let currentTool: 'restore' | 'erase' = 'restore';
+  let currentTool: 'restore' | 'erase' | 'smart-restore' | 'precision-erase' | 'edge-refine' = 'restore';
   let isDrawing = false;
   let canvasWidth = 600;
   let canvasHeight = 400;
-  let transparency = 100; // Transparency percentage (0-100)
+  let backgroundSensitivity = 50; // Background removal sensitivity (0-100)
+  let edgeRefinement = 50; // Edge refinement precision (0-100)
   
   // Mouse tracking for brush cursor
   let mouseX = 0;
   let mouseY = 0;
   let showBrushCursor = false;
+  let showBrushPreview = false;
+  let brushPreviewData: ImageData | null = null;
   
   // Image objects
   let originalImg: HTMLImageElement;
@@ -64,9 +67,35 @@
     updatePreview();
   }
   
-  // Update preview when transparency changes
-  $: if (transparency !== undefined && previewCtx) {
-    updatePreview();
+  // Debounced preview updates for sensitivity changes
+  let sensitivityTimeout: NodeJS.Timeout;
+  let refinementTimeout: NodeJS.Timeout;
+  let lastBackgroundSensitivity = backgroundSensitivity;
+  let lastEdgeRefinement = edgeRefinement;
+  let sliderUpdateBlocked = false;
+  
+  $: if (backgroundSensitivity !== lastBackgroundSensitivity && previewCtx && !sliderUpdateBlocked) {
+    console.log('Background sensitivity changed from', lastBackgroundSensitivity, 'to:', backgroundSensitivity);
+    lastBackgroundSensitivity = backgroundSensitivity;
+    clearTimeout(sensitivityTimeout);
+    sensitivityTimeout = setTimeout(() => {
+      if (!sliderUpdateBlocked) {
+        console.log('Applying background sensitivity update:', backgroundSensitivity);
+        updatePreview();
+      }
+    }, 500);
+  }
+  
+  $: if (edgeRefinement !== lastEdgeRefinement && previewCtx && !sliderUpdateBlocked) {
+    console.log('Edge refinement changed from', lastEdgeRefinement, 'to:', edgeRefinement);
+    lastEdgeRefinement = edgeRefinement;
+    clearTimeout(refinementTimeout);
+    refinementTimeout = setTimeout(() => {
+      if (!sliderUpdateBlocked) {
+        console.log('Applying edge refinement update:', edgeRefinement);
+        updatePreview();
+      }
+    }, 500);
   }
   
   async function initializeCanvas() {
@@ -75,11 +104,11 @@
     console.log('Initializing canvas...');
     console.log('Canvas elements:', { originalCanvas, processedCanvas, maskCanvas, previewCanvas });
     
-    // Get contexts
-    originalCtx = originalCanvas.getContext('2d')!;
-    processedCtx = processedCanvas.getContext('2d')!;
-    maskCtx = maskCanvas.getContext('2d')!;
-    previewCtx = previewCanvas.getContext('2d')!;
+    // Get contexts with performance optimization
+    originalCtx = originalCanvas.getContext('2d', { willReadFrequently: true })!;
+    processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true })!;
+    maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true })!;
+    previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true })!;
     
     try {
       // Load images
@@ -131,7 +160,7 @@
         }
       };
       
-      const onError = (e: Event) => {
+      const onError = (e: string | Event) => {
         errorCount++;
         console.error('Image loading failed:', e);
         if (errorCount + loadedCount === 2) {
@@ -235,20 +264,39 @@
   }
   
   function startDrawing(e: MouseEvent) {
+    console.log('Starting drawing with tool:', currentTool);
     isDrawing = true;
     draw(e);
   }
   
   function handleMouseMove(e: MouseEvent) {
     updateMousePosition(e);
+    
+    // Show brush preview when hovering
+    if (!isDrawing && showBrushCursor) {
+      updateBrushPreview(e);
+    }
+    
     if (isDrawing) {
       const rect = previewCanvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
       const y = (e.clientY - rect.top) * (canvasHeight / rect.height);
       
+      console.log('Mouse drawing at:', { x, y, isDrawing, currentTool });
+      
+      // Block slider updates during drawing to preserve mask changes
+      sliderUpdateBlocked = true;
+      clearTimeout(sensitivityTimeout);
+      clearTimeout(refinementTimeout);
+      
       drawBrushStroke(x, y);
       updatePreview();
       hasChanges = true;
+      
+      // Re-enable slider updates after a short delay
+      setTimeout(() => {
+        sliderUpdateBlocked = false;
+      }, 100);
     }
   }
   
@@ -260,11 +308,14 @@
   
   function handleMouseEnter(e: MouseEvent) {
     showBrushCursor = true;
+    showBrushPreview = true;
     updateMousePosition(e);
+    updateBrushPreview(e);
   }
   
   function handleMouseOut() {
     showBrushCursor = false;
+    showBrushPreview = false;
     stopDrawing();
   }
   
@@ -274,6 +325,13 @@
   }
   
   function stopDrawing() {
+    if (isDrawing) {
+      console.log('Stopping drawing');
+      // Ensure slider updates are re-enabled after drawing stops
+      setTimeout(() => {
+        sliderUpdateBlocked = false;
+      }, 200);
+    }
     isDrawing = false;
   }
   
@@ -298,11 +356,41 @@
   }
   
   function drawBrushStroke(x: number, y: number) {
-    maskCtx.globalCompositeOperation = currentTool === 'restore' ? 'source-over' : 'destination-out';
-    maskCtx.beginPath();
-    maskCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
-    maskCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    maskCtx.fill();
+    console.log('Drawing brush stroke:', { tool: currentTool, x, y, brushSize });
+    
+    switch (currentTool) {
+      case 'restore':
+      case 'smart-restore':
+        maskCtx.globalCompositeOperation = 'source-over';
+        maskCtx.beginPath();
+        maskCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
+        maskCtx.fillStyle = currentTool === 'smart-restore' ? 'rgba(255, 255, 255, 1.0)' : 'rgba(255, 255, 255, 0.8)';
+        maskCtx.fill();
+        break;
+        
+      case 'erase':
+      case 'precision-erase':
+        maskCtx.globalCompositeOperation = 'destination-out';
+        maskCtx.beginPath();
+        const eraseSize = currentTool === 'precision-erase' ? brushSize * 0.7 : brushSize;
+        maskCtx.arc(x, y, eraseSize / 2, 0, 2 * Math.PI);
+        maskCtx.fillStyle = 'rgba(255, 255, 255, 1.0)';
+        maskCtx.fill();
+        break;
+        
+      case 'edge-refine':
+        // Edge refine uses a softer, gradient brush
+        maskCtx.globalCompositeOperation = 'source-over';
+        const gradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushSize / 2);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.3)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        maskCtx.beginPath();
+        maskCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
+        maskCtx.fillStyle = gradient;
+        maskCtx.fill();
+        break;
+    }
   }
   
   function updatePreview() {
@@ -334,23 +422,46 @@
       const originalImageData = originalCtx.getImageData(0, 0, canvasWidth, canvasHeight);
       const previewImageData = previewCtx.getImageData(0, 0, canvasWidth, canvasHeight);
       
-      // Calculate alpha multiplier from transparency percentage
-      const alphaMultiplier = transparency / 100;
+      // Calculate sensitivity threshold for background removal
+      const sensitivityThreshold = (100 - backgroundSensitivity) / 100 * 255;
+      const edgeSmoothing = edgeRefinement / 100;
       
-      // Blend pixels based on mask and apply transparency
+      // Count mask pixels for debugging
+      let maskPixelCount = 0;
+      for (let i = 3; i < maskImageData.data.length; i += 4) {
+        if (maskImageData.data[i] > 0) maskPixelCount++;
+      }
+      
+      console.log('Mask has', maskPixelCount, 'painted pixels');
+      console.log('Applying sensitivity:', backgroundSensitivity, 'threshold:', sensitivityThreshold);
+      console.log('Applying edge smoothing:', edgeRefinement, 'factor:', edgeSmoothing);
+      
+      // Blend pixels based on mask and apply background sensitivity
       for (let i = 0; i < maskImageData.data.length; i += 4) {
         const maskAlpha = maskImageData.data[i + 3] / 255;
+        const originalAlpha = originalImageData.data[i + 3];
+        const processedAlpha = previewImageData.data[i + 3];
         
         if (maskAlpha > 0) {
-          // Restore original pixels
+          // Restore original pixels where user painted (this should be visible)
           previewImageData.data[i] = originalImageData.data[i];
           previewImageData.data[i + 1] = originalImageData.data[i + 1];
           previewImageData.data[i + 2] = originalImageData.data[i + 2];
           previewImageData.data[i + 3] = originalImageData.data[i + 3];
+        } else {
+          // Apply background sensitivity to auto-processed areas
+          if (processedAlpha < sensitivityThreshold) {
+            // Make more transparent based on sensitivity
+            const adjustedAlpha = Math.max(0, processedAlpha - (sensitivityThreshold - processedAlpha));
+            previewImageData.data[i + 3] = adjustedAlpha;
+          }
+          
+          // Apply edge refinement smoothing
+          if (edgeSmoothing > 0 && processedAlpha > 0 && processedAlpha < 255) {
+            const smoothedAlpha = processedAlpha + (255 - processedAlpha) * edgeSmoothing * 0.3;
+            previewImageData.data[i + 3] = Math.min(255, smoothedAlpha);
+          }
         }
-        
-        // Apply global transparency adjustment
-        previewImageData.data[i + 3] = Math.round(previewImageData.data[i + 3] * alphaMultiplier);
       }
       
       previewCtx.putImageData(previewImageData, 0, 0);
@@ -363,6 +474,7 @@
   }
   
   function clearMask() {
+    console.log('Clearing mask...');
     initializeMask();
     updatePreview();
     hasChanges = false;
@@ -413,11 +525,14 @@
     } catch (error) {
       console.error('=== REFINEMENT ERROR ===');
       console.error('Error details:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error message:', errorMessage);
+      if (error instanceof Error) {
+        console.error('Error stack:', error.stack);
+      }
       
       dispatch('error', { 
-        message: `Failed to apply refinements: ${error.message}` 
+        message: `Failed to apply refinements: ${errorMessage}` 
       });
     } finally {
       isProcessingRefinement = false;
@@ -431,6 +546,58 @@
   function setBrushSize(size: number) {
     brushSize = Math.max(5, Math.min(100, size));
   }
+  
+  function updateBrushPreview(e: MouseEvent) {
+    if (!previewCanvas || !previewCtx) return;
+    
+    const rect = previewCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    const y = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    
+    // Create a temporary canvas to show brush effect preview
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvasWidth;
+    tempCanvas.height = canvasHeight;
+    const tempCtx = tempCanvas.getContext('2d')!;
+    
+    // Copy current preview to temp canvas
+    tempCtx.drawImage(previewCanvas, 0, 0);
+    
+    // Apply brush preview effect
+    tempCtx.globalCompositeOperation = 'source-over';
+    tempCtx.beginPath();
+    tempCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
+    
+    switch (currentTool) {
+      case 'restore':
+        tempCtx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+        tempCtx.strokeStyle = 'rgba(0, 255, 136, 0.8)';
+        break;
+      case 'smart-restore':
+        tempCtx.fillStyle = 'rgba(0, 255, 136, 0.4)';
+        tempCtx.strokeStyle = 'rgba(0, 255, 136, 1.0)';
+        break;
+      case 'erase':
+        tempCtx.fillStyle = 'rgba(255, 68, 68, 0.3)';
+        tempCtx.strokeStyle = 'rgba(255, 68, 68, 0.8)';
+        break;
+      case 'precision-erase':
+        tempCtx.fillStyle = 'rgba(255, 68, 68, 0.4)';
+        tempCtx.strokeStyle = 'rgba(255, 68, 68, 1.0)';
+        break;
+      case 'edge-refine':
+        tempCtx.fillStyle = 'rgba(136, 136, 255, 0.3)';
+        tempCtx.strokeStyle = 'rgba(136, 136, 255, 0.8)';
+        break;
+    }
+    
+    tempCtx.lineWidth = 2;
+    tempCtx.fill();
+    tempCtx.stroke();
+    
+    // Store preview data
+    brushPreviewData = tempCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+  }
 </script>
 
 {#if isVisible}
@@ -443,6 +610,39 @@
         <p class="text-sm text-dark-text-secondary mt-1">
           Use the brush tools to restore or remove parts as needed
         </p>
+        
+        <!-- Mobile-friendly quick actions -->
+        <div class="mobile-quick-actions md:hidden">
+          <button
+            class="quick-action-btn {currentTool === 'smart-restore' ? 'active' : ''}"
+            on:click={() => currentTool = 'smart-restore'}
+            title="Smart Restore"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </button>
+          <button
+            class="quick-action-btn {currentTool === 'precision-erase' ? 'active' : ''}"
+            on:click={() => currentTool = 'precision-erase'}
+            title="Precision Erase"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </button>
+          <div class="brush-size-mobile">
+            <span class="text-xs text-gray-400">Size</span>
+            <input
+              type="range"
+              min="10"
+              max="80"
+              bind:value={brushSize}
+              class="mobile-brush-slider"
+            />
+            <span class="text-xs text-magic-gradient font-bold">{brushSize}</span>
+          </div>
+        </div>
         
         <button 
           on:click={cancelRefinement}
@@ -469,23 +669,56 @@
               <button
                 class="tool-button {currentTool === 'restore' ? 'active' : ''}"
                 on:click={() => currentTool = 'restore'}
-                title="Brush tool - restore original pixels by painting over removed areas"
+                title="Basic brush - restore original pixels"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17v4a2 2 0 002 2h4M15 6l3 3m-5 5l-3-3m3 3l-3-3m3 3l3-3"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                 </svg>
-                🖌️ Brush
+                Restore
+              </button>
+              
+              <button
+                class="tool-button {currentTool === 'smart-restore' ? 'active' : ''}"
+                on:click={() => currentTool = 'smart-restore'}
+                title="Smart restore - intelligently restore with better blending"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Smart Restore
               </button>
               
               <button
                 class="tool-button {currentTool === 'erase' ? 'active' : ''}"
                 on:click={() => currentTool = 'erase'}
-                title="Eraser tool - remove unwanted parts by painting over them"
+                title="Basic eraser - remove unwanted parts"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
-                🧹 Eraser
+                Erase
+              </button>
+              
+              <button
+                class="tool-button {currentTool === 'precision-erase' ? 'active' : ''}"
+                on:click={() => currentTool = 'precision-erase'}
+                title="Precision eraser - smaller, more accurate removal"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Precision Erase
+              </button>
+              
+              <button
+                class="tool-button {currentTool === 'edge-refine' ? 'active' : ''}"
+                on:click={() => currentTool = 'edge-refine'}
+                title="Edge refine - smooth and blend edge transitions"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                Edge Refine
               </button>
             </div>
           </div>
@@ -505,18 +738,43 @@
             </div>
           </div>
           
-          <!-- Transparency Control -->
-          <div class="transparency-section">
-            <h4 class="section-title">Transparency</h4>
-            <div class="transparency-controls">
+          <!-- Background Sensitivity Control -->
+          <div class="sensitivity-section">
+            <h4 class="section-title">Background Sensitivity</h4>
+            <p class="control-description">Adjust how aggressively backgrounds are removed</p>
+            <div class="sensitivity-controls">
               <input
                 type="range"
                 min="0"
                 max="100"
-                bind:value={transparency}
-                class="transparency-slider"
+                bind:value={backgroundSensitivity}
+                class="sensitivity-slider"
+                title="Lower = Remove more background, Higher = Keep more detail"
               />
-              <span class="transparency-display">{transparency}%</span>
+              <div class="slider-labels">
+                <span class="slider-label-left">Aggressive</span>
+                <span class="slider-label-right">Conservative</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Edge Refinement Control -->
+          <div class="edge-section">
+            <h4 class="section-title">Edge Refinement</h4>
+            <p class="control-description">Smooth and refine edges around complex areas</p>
+            <div class="edge-controls">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                bind:value={edgeRefinement}
+                class="edge-slider"
+                title="Higher values create smoother, softer edges"
+              />
+              <div class="slider-labels">
+                <span class="slider-label-left">Sharp</span>
+                <span class="slider-label-right">Smooth</span>
+              </div>
             </div>
           </div>
           
@@ -596,6 +854,21 @@
                 >
                   <!-- Inner dot for precision -->
                   <div class="cursor-center"></div>
+                  
+                  <!-- Brush effect preview ring -->
+                  {#if showBrushPreview && !isDrawing}
+                    <div class="brush-preview-ring {currentTool}">
+                      <div class="preview-indicator">
+                        {#if currentTool === 'restore' || currentTool === 'smart-restore'}
+                          ↺
+                        {:else if currentTool === 'erase' || currentTool === 'precision-erase'}
+                          ✕
+                        {:else if currentTool === 'edge-refine'}
+                          ✨
+                        {/if}
+                      </div>
+                    </div>
+                  {/if}
                 </div>
               {/if}
             </div>
@@ -709,6 +982,64 @@
     color: #fff;
   }
   
+  .mobile-quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+  
+  .quick-action-btn {
+    padding: 12px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .quick-action-btn:hover,
+  .quick-action-btn.active {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.4);
+    color: #00ff88;
+  }
+  
+  .brush-size-mobile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .mobile-brush-slider {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+  
+  .mobile-brush-slider::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    background: #00ff88;
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+  
   /* Control Panel Styles */
   .section-title {
     color: #00ff88;
@@ -779,35 +1110,61 @@
     text-align: center;
   }
   
-  .transparency-controls {
+  .sensitivity-controls,
+  .edge-controls {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
   
-  .transparency-slider {
+  .control-description {
+    color: #999;
+    font-size: 12px;
+    margin: -8px 0 8px 0;
+    line-height: 1.3;
+  }
+  
+  .sensitivity-slider,
+  .edge-slider {
     width: 100%;
     height: 6px;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(0, 255, 136, 0.3));
+    background: linear-gradient(to right, rgba(255, 68, 68, 0.3), rgba(0, 255, 136, 0.3));
     border-radius: 3px;
     outline: none;
     cursor: pointer;
   }
   
-  .transparency-slider::-webkit-slider-thumb {
+  .edge-slider {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(0, 255, 136, 0.4));
+  }
+  
+  .sensitivity-slider::-webkit-slider-thumb,
+  .edge-slider::-webkit-slider-thumb {
     width: 18px;
     height: 18px;
     background: #00ff88;
     border-radius: 50%;
     cursor: pointer;
     -webkit-appearance: none;
+    box-shadow: 0 0 4px rgba(0, 255, 136, 0.4);
   }
   
-  .transparency-display {
-    color: #00ff88;
-    font-size: 14px;
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: 11px;
     font-weight: 500;
-    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .slider-label-left {
+    color: #ff4444;
+  }
+  
+  .slider-label-right {
+    color: #00ff88;
   }
   
   .action-buttons {
@@ -840,6 +1197,36 @@
   .action-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  
+  .quick-fix-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .quick-fix-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 6px;
+    color: #00ff88;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  
+  .quick-fix-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%);
+    border-color: rgba(0, 255, 136, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 255, 136, 0.2);
   }
   
   .preview-toggle {
@@ -916,7 +1303,13 @@
     border: 2px solid rgba(0, 255, 136, 0.3);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    background: #000;
+    background: 
+      linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
@@ -970,6 +1363,70 @@
     background: #ff4444;
   }
   
+  .brush-preview-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    animation: pulsePreview 2s ease-in-out infinite;
+  }
+  
+  .brush-preview-ring.restore,
+  .brush-preview-ring.smart-restore {
+    border: 1px dashed #00ff88;
+    background: rgba(0, 255, 136, 0.05);
+  }
+  
+  .brush-preview-ring.smart-restore {
+    border-width: 2px;
+    background: rgba(0, 255, 136, 0.1);
+  }
+  
+  .brush-preview-ring.erase,
+  .brush-preview-ring.precision-erase {
+    border: 1px dashed #ff4444;
+    background: rgba(255, 68, 68, 0.05);
+  }
+  
+  .brush-preview-ring.precision-erase {
+    border-width: 2px;
+    background: rgba(255, 68, 68, 0.1);
+  }
+  
+  .brush-preview-ring.edge-refine {
+    border: 1px dashed #8888ff;
+    background: rgba(136, 136, 255, 0.05);
+  }
+  
+  .preview-indicator {
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0.7;
+  }
+  
+  .brush-preview-ring.restore .preview-indicator,
+  .brush-preview-ring.smart-restore .preview-indicator {
+    color: #00ff88;
+  }
+  
+  .brush-preview-ring.erase .preview-indicator,
+  .brush-preview-ring.precision-erase .preview-indicator {
+    color: #ff4444;
+  }
+  
+  .brush-preview-ring.edge-refine .preview-indicator {
+    color: #8888ff;
+  }
+  
+  @keyframes pulsePreview {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+  
   .refinement-footer {
     padding: 16px 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -991,39 +1448,127 @@
     color: #ccc;
   }
   
-  .debug-info p {
-    margin: 2px 0;
-  }
   
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .editor-layout {
-      flex-direction: column;
-    }
-    
-    .controls-panel {
-      width: 100%;
-      flex-direction: row;
-      gap: 16px;
-      overflow-x: auto;
-      padding: 16px;
-    }
-    
-    .tool-section,
-    .brush-section,
-    .actions-section,
-    .preview-section {
-      min-width: 200px;
-    }
-    
-    .canvas-area {
-      padding: 16px;
+    .refinement-overlay {
+      padding: 0;
     }
     
     .refinement-container {
       max-width: 100vw;
       max-height: 100vh;
       border-radius: 0;
+    }
+    
+    .editor-layout {
+      flex-direction: column;
+    }
+    
+    .controls-panel {
+      width: 100%;
+      max-height: 40vh;
+      overflow-y: auto;
+      padding: 12px;
+      border-right: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .canvas-area {
+      flex: 1;
+      padding: 12px;
+    }
+    
+    /* Make tool buttons larger for touch */
+    .tool-button {
+      padding: 16px 20px;
+      font-size: 16px;
+      min-height: 50px;
+    }
+    
+    /* Improve slider usability on mobile */
+    .brush-slider,
+    .sensitivity-slider,
+    .edge-slider {
+      height: 10px;
+    }
+    
+    .brush-slider::-webkit-slider-thumb,
+    .sensitivity-slider::-webkit-slider-thumb,
+    .edge-slider::-webkit-slider-thumb {
+      width: 24px;
+      height: 24px;
+    }
+    
+    /* Stack controls vertically on very small screens */
+    @media (max-width: 480px) {
+      .controls-panel {
+        gap: 16px;
+      }
+      
+      .tool-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      
+      .tool-button {
+        padding: 12px 8px;
+        font-size: 14px;
+        text-align: center;
+      }
+      
+      .tool-button svg {
+        margin: 0 auto 4px;
+      }
+      
+      /* Mobile quick fixes layout */
+      .quick-fix-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      
+      .quick-fix-btn {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      
+      .quick-fix-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+  
+  /* Touch-friendly enhancements */
+  @media (hover: none) and (pointer: coarse) {
+    .tool-button {
+      min-height: 48px;
+      padding: 16px;
+    }
+    
+    .action-btn {
+      min-height: 44px;
+      padding: 12px 16px;
+    }
+    
+    .brush-slider,
+    .sensitivity-slider,
+    .edge-slider {
+      height: 12px;
+    }
+    
+    .brush-slider::-webkit-slider-thumb,
+    .sensitivity-slider::-webkit-slider-thumb,
+    .edge-slider::-webkit-slider-thumb {
+      width: 28px;
+      height: 28px;
+    }
+    
+    /* Increase brush cursor size on touch devices */
+    .dynamic-brush-cursor {
+      border-width: 3px;
     }
   }
 </style>
