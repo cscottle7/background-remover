@@ -10,6 +10,7 @@
   import { ImageCanvasEngine, type CanvasLayers } from '$lib/services/ImageCanvasEngine';
   import { ToolOperations, ToolUtils, type ToolType, type PointerEvent } from '$lib/services/ToolOperations';
   import { CanvasRenderer, type RenderOptions } from '$lib/services/CanvasRenderer';
+  import MagicScanline from './MagicScanline.svelte';
   
   // Props
   export let originalImage: string | null;
@@ -43,6 +44,7 @@
   let containerHeight = 0;
   let lastWidth = 0;
   let lastHeight = 0;
+  let showMagicScanline = false;
   
   // Throttling for performance
   let containerUpdateThrottle: ReturnType<typeof setTimeout>;
@@ -154,12 +156,16 @@
     
     isInitialized = true;
     
+    // Show magic scanline during initialization
+    showMagicScanline = true;
+    
     // Save initial state for undo functionality
     setTimeout(() => {
+      showMagicScanline = false; // Hide scanline after animation
       toolOperations?.saveInitialState?.();
       // Dispatch initial history state
       dispatch('historyChanged', toolOperations?.getHistoryState());
-    }, 100);
+    }, 2500); // Match scanline duration + buffer
     
     dispatch('initialized');
   }
@@ -545,6 +551,14 @@
       <p>Processing...</p>
     </div>
   {/if}
+
+  <!-- Magic scanline animation -->
+  <MagicScanline 
+    isActive={showMagicScanline}
+    duration={2000}
+    on:started={() => console.log('✨ Magic scanline started')}
+    on:completed={() => console.log('✨ Magic scanline completed')}
+  />
 </div>
 
 <style>
@@ -554,15 +568,19 @@
     height: 100%;
     min-height: 500px; /* Increased minimum height for better editing */
     overflow: hidden;
-    background: #0f172a; /* Dark theme background */
-    border-radius: 8px;
+    background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 100%); /* Subtle gradient */
+    border-radius: 12px;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #334155; /* Dark theme border */
+    border: 1px solid #334155;
+    box-shadow: 
+      inset 0 1px 0 rgba(59, 130, 246, 0.1),
+      inset 0 0 20px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(59, 130, 246, 0.05); /* Subtle inner glow */
   }
 
   .canvas-layer {
@@ -588,8 +606,25 @@
     height: auto; /* Let canvas determine its own height based on aspect ratio */
     object-fit: contain;
     border: 2px solid #3b82f6; /* Brighter border for better visibility */
-    border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Add depth */
+    border-radius: 8px;
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.4),
+      0 4px 12px rgba(59, 130, 246, 0.3),
+      0 0 0 1px rgba(59, 130, 246, 0.2); /* Multi-layer glow effect */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .canvas-interactive:hover {
+    box-shadow: 
+      0 12px 35px rgba(0, 0, 0, 0.5),
+      0 6px 18px rgba(59, 130, 246, 0.4),
+      0 0 0 1px rgba(59, 130, 246, 0.4),
+      0 0 20px rgba(59, 130, 246, 0.2); /* Enhanced hover glow */
+    transform: translateY(-2px); /* Subtle lift on hover */
+  }
+
+  .canvas-container.initialized .canvas-interactive {
+    animation: popForward 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
   }
 
   .canvas-interactive.drawing {
@@ -634,6 +669,26 @@
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+
+  @keyframes popForward {
+    0% { 
+      transform: scale(0.8) translateY(20px);
+      opacity: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    60% { 
+      transform: scale(1.05) translateY(-5px);
+      opacity: 1;
+    }
+    100% { 
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(59, 130, 246, 0.3),
+        0 0 0 1px rgba(59, 130, 246, 0.2);
+    }
   }
 
   /* Mobile optimizations */
