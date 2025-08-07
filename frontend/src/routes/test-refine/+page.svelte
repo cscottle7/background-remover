@@ -436,22 +436,59 @@
 </div>
 
 <style>
-  /* Same styles as the main refine page */
+  /* CSS Custom Properties - Design System */
+  :root {
+    /* Colors */
+    --color-background-primary: #0f172a;
+    --color-background-secondary: #1e293b;
+    --color-surface: #334155;
+    --color-surface-hover: #475569;
+    --color-accent-primary: #3b82f6;
+    --color-accent-secondary: #2563eb;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #d1d5db;
+    --color-border: #334155;
+    --color-border-accent: rgba(59, 130, 246, 0.2);
+    
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Shadows */
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-strong: 0 8px 25px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+    
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
   .refine-page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background: #0f172a; /* Dark theme to match main app */
-    color: #f8fafc;
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
   }
 
   .refine-header {
-    background: #1e293b;
-    border-bottom: 1px solid #334155;
-    padding: 12px 16px;
+    background: var(--color-background-secondary);
+    border-bottom: 1px solid var(--color-border);
+    padding: 12px var(--spacing-md);
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: var(--transition-smooth);
   }
 
   .header-content {
@@ -485,7 +522,8 @@
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--color-text-primary);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   .view-controls {
@@ -531,11 +569,13 @@
 
   .workspace {
     display: grid;
-    gap: 16px;
+    gap: var(--spacing-md);
     height: calc(100vh - 120px); /* Reduce reserved space for header/footer */
-    transition: grid-template-columns 0.3s ease;
+    min-height: 600px; /* Ensure minimum usable space */
+    transition: var(--transition-smooth);
     position: relative;
-    background: #0f172a;
+    background: var(--color-background-primary);
+    container-type: inline-size; /* Enable container queries */
   }
 
   .workspace.tools-expanded {
@@ -543,32 +583,49 @@
   }
 
   .workspace.tools-collapsed {
-    grid-template-columns: 1fr 0px;
+    grid-template-columns: 1fr 48px; /* Space for collapse toggle */
   }
 
   .canvas-area {
-    background: #1e293b;
-    border-radius: 8px;
+    background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 100%);
+    border-radius: 12px;
     border: 1px solid #334155;
     overflow: hidden;
     position: relative;
+    box-shadow: 
+      inset 0 1px 0 rgba(59, 130, 246, 0.1),
+      inset 0 0 20px rgba(0, 0, 0, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(59, 130, 246, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .canvas-area:hover {
+    box-shadow: 
+      inset 0 1px 0 rgba(59, 130, 246, 0.15),
+      inset 0 0 25px rgba(0, 0, 0, 0.4),
+      0 6px 18px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(59, 130, 246, 0.1);
   }
 
   .toolbox-area {
     overflow: hidden;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: right center;
   }
 
   .workspace.tools-collapsed .toolbox-area {
     opacity: 0;
+    transform: scaleX(0) translateX(20px);
+    pointer-events: none;
   }
 
   .collapse-toggle {
-    position: fixed;
-    right: 16px;
+    position: absolute;
+    right: -16px;
     top: 50%;
     transform: translateY(-50%);
-    background: #1e293b;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     border: none;
     width: 32px;
@@ -577,20 +634,37 @@
     cursor: pointer;
     z-index: 1000;
     font-size: 14px;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 
+      -2px 0 8px rgba(59, 130, 246, 0.3),
+      -1px 0 4px rgba(0, 0, 0, 0.2);
   }
 
   .collapse-toggle:hover {
-    background: #334155;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     width: 36px;
+    box-shadow: 
+      -3px 0 12px rgba(59, 130, 246, 0.4),
+      -2px 0 6px rgba(0, 0, 0, 0.3);
+    transform: translateY(-50%) translateX(-2px);
   }
 
   .collapse-toggle.collapsed {
-    right: 0px;
+    right: 16px;
     border-radius: 0 8px 8px 0;
+    box-shadow: 
+      2px 0 8px rgba(59, 130, 246, 0.3),
+      1px 0 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .collapse-toggle.collapsed:hover {
+    transform: translateY(-50%) translateX(2px);
+    box-shadow: 
+      3px 0 12px rgba(59, 130, 246, 0.4),
+      2px 0 6px rgba(0, 0, 0, 0.3);
   }
 
   .loading-container {
@@ -708,20 +782,47 @@
     cursor: not-allowed;
   }
 
+  /* Modern responsive design with container queries */
+  @container (max-width: 768px) {
+    .workspace {
+      grid-template-columns: 1fr !important;
+      grid-template-rows: auto 1fr;
+      gap: var(--spacing-sm);
+    }
+
+    .toolbox-area {
+      order: -1;
+      transform: none !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+
+    .collapse-toggle {
+      display: none;
+    }
+  }
+
   @media (max-width: 768px) {
     .refine-page.mobile .workspace {
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
-      height: calc(100vh - 120px);
+      grid-template-rows: auto 1fr;
+      height: calc(100vh - 100px); /* Less space needed on mobile */
+      gap: var(--spacing-sm);
     }
 
     .refine-page.mobile .toolbox-area {
       order: -1;
       transform: none;
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .refine-page.mobile .toolbox-area.collapsed {
-      transform: none;
+    .refine-page.mobile .collapse-toggle {
+      display: none; /* Hide collapse toggle on mobile */
+    }
+
+    .refine-page.mobile .canvas-area {
+      min-height: 400px; /* Smaller minimum on mobile */
     }
   }
 
