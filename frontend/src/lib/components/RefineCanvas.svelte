@@ -153,6 +153,14 @@
     }, 100);
     
     isInitialized = true;
+    
+    // Save initial state for undo functionality
+    setTimeout(() => {
+      toolOperations?.saveInitialState?.();
+      // Dispatch initial history state
+      dispatch('historyChanged', toolOperations?.getHistoryState());
+    }, 100);
+    
     dispatch('initialized');
   }
 
@@ -424,7 +432,11 @@
    */
   export function undo(): boolean {
     const result = toolOperations?.undo() || false;
-    if (result) renderer?.render();
+    if (result) {
+      renderer?.render();
+      // Dispatch event to update undo/redo state
+      dispatch('historyChanged', toolOperations?.getHistoryState());
+    }
     return result;
   }
 
@@ -433,8 +445,19 @@
    */
   export function redo(): boolean {
     const result = toolOperations?.redo() || false;
-    if (result) renderer?.render();
+    if (result) {
+      renderer?.render();
+      // Dispatch event to update undo/redo state
+      dispatch('historyChanged', toolOperations?.getHistoryState());
+    }
     return result;
+  }
+
+  /**
+   * Get current undo/redo state
+   */
+  export function getHistoryState(): { canUndo: boolean; canRedo: boolean } {
+    return toolOperations?.getHistoryState() || { canUndo: false, canRedo: false };
   }
 
   /**

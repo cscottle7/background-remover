@@ -216,14 +216,20 @@
   function updateUndoRedoState(): void {
     // Get actual state from canvas component if available
     if (canvasComponent) {
-      // For now, simulate proper state management
-      // In real implementation, this would get state from ToolOperations
-      canUndo = true; // This will be fixed when we implement proper history
-      canRedo = false; // This will be fixed when we implement proper history
+      const historyState = canvasComponent.getHistoryState();
+      canUndo = historyState.canUndo;
+      canRedo = historyState.canRedo;
+      console.log('📝 History state updated:', { canUndo, canRedo });
     } else {
       canUndo = false;
       canRedo = false;
     }
+  }
+
+  function handleHistoryChanged(event: CustomEvent<{ canUndo: boolean; canRedo: boolean }>): void {
+    canUndo = event.detail.canUndo;
+    canRedo = event.detail.canRedo;
+    console.log('📝 History changed:', event.detail);
   }
 
   function toggleComparison(): void {
@@ -372,6 +378,7 @@
             {toolboxWidth}
             on:initialized={handleCanvasInitialized}
             on:error={handleCanvasError}
+            on:historyChanged={handleHistoryChanged}
           />
         </div>
 

@@ -232,6 +232,13 @@ export class ImageCanvasEngine {
     return this.isInitialized;
   }
 
+  /**
+   * Get preview canvas for direct access (needed for undo/redo)
+   */
+  getPreviewCanvas(): HTMLCanvasElement {
+    return this.layers.preview;
+  }
+
   // Private helper methods
 
   private async loadImage(src: string): Promise<HTMLImageElement> {
