@@ -51,9 +51,17 @@ export class CanvasRenderer {
   private offscreenContext: OffscreenCanvasRenderingContext2D | null = null;
   private renderQueue: (() => void)[] = [];
   
-  // Viewport throttling to prevent excessive updates
+  // Advanced performance optimizations
   private lastViewportUpdate = 0;
-  private readonly VIEWPORT_THROTTLE_MS = 100;
+  private readonly VIEWPORT_THROTTLE_MS = 16; // 60fps throttling
+  private renderScheduled = false;
+  private lastRenderTime = 0;
+  private readonly MIN_RENDER_INTERVAL = 16; // 60fps maximum
+  private frameDropCount = 0;
+  
+  // Memory management
+  private imageDataCache = new Map<string, ImageData>();
+  private readonly MAX_CACHE_SIZE = 10;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -229,11 +237,40 @@ export class CanvasRenderer {
   }
 
   /**
-   * Render with specified options
+   * Render with specified options (optimized for 60fps)
    */
   render(options: RenderOptions = {}): void {
-    if (!this.isDirty || this.isRendering) return;
+    if (!this.isDirty) return;
     
+    const now = performance.now();
+    
+    // Throttle renders to maintain smooth 60fps
+    if (now - this.lastRenderTime < this.MIN_RENDER_INTERVAL) {
+      if (!this.renderScheduled) {
+        this.renderScheduled = true;
+        const timeToWait = this.MIN_RENDER_INTERVAL - (now - this.lastRenderTime);
+        setTimeout(() => {
+          this.renderScheduled = false;
+          this.render(options);
+        }, timeToWait);
+      }
+      return;
+    }
+    
+    // Detect frame drops
+    if (now - this.lastRenderTime > 32) { // More than 2 frames
+      this.frameDropCount++;
+      if (this.frameDropCount > 5) {
+        console.warn('🐌 Performance warning: Frame drops detected', {
+          lastInterval: now - this.lastRenderTime,
+          frameDrops: this.frameDropCount
+        });
+      }
+    } else {
+      this.frameDropCount = Math.max(0, this.frameDropCount - 1);
+    }
+    
+    this.lastRenderTime = now;
     this.queueRender(() => this.performRender(options));
   }
 

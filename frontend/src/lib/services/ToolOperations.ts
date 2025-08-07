@@ -23,6 +23,9 @@ export interface PointerEvent {
   point: Point;
   pressure?: number;
   pointerType: 'mouse' | 'pen' | 'touch';
+  velocity?: number;
+  tiltX?: number;
+  tiltY?: number;
 }
 
 export class ToolOperations {
@@ -34,6 +37,14 @@ export class ToolOperations {
   private undoStack: string[] = [];
   private redoStack: string[] = [];
   private maxUndoSteps: number = 20;
+  
+  // Advanced brush dynamics
+  private lastPressure: number = 1.0;
+  private lastVelocity: number = 0;
+  private lastTimestamp: number = 0;
+  private strokePoints: Array<{ point: Point; pressure: number; timestamp: number }> = [];
+  private readonly MIN_BRUSH_SIZE = 1;
+  private readonly MAX_BRUSH_SIZE = 200;
 
   constructor(canvasEngine: ImageCanvasEngine) {
     this.canvasEngine = canvasEngine;
@@ -77,14 +88,21 @@ export class ToolOperations {
 
     this.isDrawing = true;
     this.lastPoint = event.point;
+    this.lastTimestamp = performance.now();
+    this.strokePoints = [{ point: event.point, pressure: event.pressure || 1.0, timestamp: this.lastTimestamp }];
     
     // Save state for undo
     this.saveUndoState();
     
-    // Perform initial tool operation
-    this.performToolOperation(event.point);
+    // Perform initial tool operation with pressure
+    this.performToolOperation(event.point, event.pressure || 1.0);
     
-    console.log('🎯 Pointer down:', { tool: this.currentTool, point: event.point });
+    console.log('🎯 Pointer down:', { 
+      tool: this.currentTool, 
+      point: event.point, 
+      pressure: event.pressure || 1.0,
+      pointerType: event.pointerType 
+    });
   }
 
   /**
@@ -224,13 +242,38 @@ export class ToolOperations {
 
   // Private helper methods
 
-  private performToolOperation(point: Point): void {
+  private performToolOperation(point: Point, pressure: number = 1.0): void {
+    // Use optimized brush operation with pressure sensitivity
+    const currentTime = performance.now();
+    const timeDelta = currentTime - this.lastTimestamp;
+    
+    // Calculate velocity for dynamic brush effects
+    if (this.lastPoint && timeDelta > 0) {
+      const distance = Math.sqrt(
+        Math.pow(point.x - this.lastPoint.x, 2) + 
+        Math.pow(point.y - this.lastPoint.y, 2)
+      );
+      this.lastVelocity = distance / timeDelta;
+    }
+    
+    // Dynamic brush size based on pressure and velocity
+    let dynamicBrushSize = this.brushSize * pressure;
+    
+    // Reduce brush size for fast movements (for more control)
+    if (this.lastVelocity > 0.5) {
+      dynamicBrushSize *= Math.max(0.5, 1 - (this.lastVelocity - 0.5) * 0.3);
+    }
+    
+    dynamicBrushSize = Math.max(this.MIN_BRUSH_SIZE, Math.min(this.MAX_BRUSH_SIZE, dynamicBrushSize));
+    
     switch (this.currentTool) {
       case 'restore':
-        this.canvasEngine.performRestore(point.x, point.y, this.brushSize);
+        this.canvasEngine.performOptimizedBrushOp?.('restore', point.x, point.y, dynamicBrushSize, pressure) ||
+        this.canvasEngine.performRestore(point.x, point.y, dynamicBrushSize);
         break;
       case 'erase':
-        this.canvasEngine.performErase(point.x, point.y, this.brushSize);
+        this.canvasEngine.performOptimizedBrushOp?.('erase', point.x, point.y, dynamicBrushSize, pressure) ||
+        this.canvasEngine.performErase(point.x, point.y, dynamicBrushSize);
         break;
       case 'smart-restore':
         this.performSmartRestore(point);
@@ -239,6 +282,9 @@ export class ToolOperations {
         this.performSmartErase(point);
         break;
     }
+    
+    this.lastPressure = pressure;
+    this.lastTimestamp = currentTime;
   }
 
   private interpolateStroke(from: Point, to: Point): void {

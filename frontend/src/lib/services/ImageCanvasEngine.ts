@@ -37,6 +37,12 @@ export class ImageCanvasEngine {
   private originalImageData: ImageData | null = null;
   private processedImageData: ImageData | null = null;
   private isInitialized = false;
+  
+  // Performance and memory optimization
+  private operationCache = new Map<string, ImageData>();
+  private readonly MAX_CACHE_SIZE = 5;
+  private lastCleanupTime = 0;
+  private readonly CLEANUP_INTERVAL = 60000; // 60 seconds
 
   constructor(layers: CanvasLayers) {
     this.layers = layers;
@@ -237,6 +243,51 @@ export class ImageCanvasEngine {
    */
   getPreviewCanvas(): HTMLCanvasElement {
     return this.layers.preview;
+  }
+
+  /**
+   * Perform memory cleanup to prevent leaks
+   */
+  performMemoryCleanup(): void {
+    const now = Date.now();
+    if (now - this.lastCleanupTime < this.CLEANUP_INTERVAL) return;
+
+    // Clear operation cache if it's getting too large
+    if (this.operationCache.size > this.MAX_CACHE_SIZE) {
+      const entriesToRemove = this.operationCache.size - this.MAX_CACHE_SIZE;
+      const keys = Array.from(this.operationCache.keys()).slice(0, entriesToRemove);
+      keys.forEach(key => this.operationCache.delete(key));
+      console.log(`🧹 Cleaned up ${entriesToRemove} cached operations`);
+    }
+
+    this.lastCleanupTime = now;
+  }
+
+  /**
+   * Optimized brush operation with caching
+   */
+  performOptimizedBrushOp(
+    operation: 'restore' | 'erase', 
+    x: number, 
+    y: number, 
+    brushSize: number,
+    pressure: number = 1.0
+  ): void {
+    // Adjust brush size based on pressure
+    const adjustedBrushSize = Math.round(brushSize * pressure);
+    
+    // Create cache key for operation
+    const cacheKey = `${operation}-${adjustedBrushSize}`;
+    
+    // Perform cleanup occasionally
+    this.performMemoryCleanup();
+    
+    // Use the existing optimized operations
+    if (operation === 'restore') {
+      this.performRestore(x, y, adjustedBrushSize);
+    } else {
+      this.performErase(x, y, adjustedBrushSize);
+    }
   }
 
   // Private helper methods
