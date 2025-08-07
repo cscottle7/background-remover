@@ -81,6 +81,7 @@ coverage/
 # Build outputs
 frontend/build/
 frontend/dist/
+frontend/.svelte-kit/
 *.tgz
 
 # Local env files
@@ -102,6 +103,14 @@ test_*.py
 debug_*.py
 test_*.html
 test_*.js
+debug-*.js
+debug-*.png
+manual-*.js
+quick-*.js
+final-*.js
+final-*.png
+phase*-test-result.png
+viewport-fix-*.png
 
 # Machine learning models (if they're large)
 backend/models/*/
