@@ -214,8 +214,16 @@
   }
 
   function updateUndoRedoState(): void {
-    canUndo = true; // Would check actual undo stack
-    canRedo = false; // Would check actual redo stack
+    // Get actual state from canvas component if available
+    if (canvasComponent) {
+      // For now, simulate proper state management
+      // In real implementation, this would get state from ToolOperations
+      canUndo = true; // This will be fixed when we implement proper history
+      canRedo = false; // This will be fixed when we implement proper history
+    } else {
+      canUndo = false;
+      canRedo = false;
+    }
   }
 
   function toggleComparison(): void {
@@ -641,8 +649,8 @@
   }
 
   .refine-footer {
-    background: white;
-    border-top: 1px solid #e9ecef;
+    background: #1e293b; /* Dark footer background */
+    border-top: 1px solid #334155;
     padding: 16px;
   }
 
@@ -669,19 +677,23 @@
   .action-btn.secondary {
     background: #6c757d;
     color: white;
+    border: 1px solid #6c757d;
   }
 
   .action-btn.secondary:hover {
     background: #545b62;
+    border-color: #545b62;
   }
 
   .action-btn.primary {
-    background: #007bff;
+    background: #3b82f6; /* Blue primary button */
     color: white;
+    border: 1px solid #3b82f6;
   }
 
   .action-btn.primary:hover {
-    background: #0056b3;
+    background: #2563eb;
+    border-color: #2563eb;
   }
 
   .action-btn:disabled {
