@@ -629,6 +629,58 @@
 
   .canvas-interactive.drawing {
     cursor: none !important;
+    box-shadow: 
+      0 12px 35px rgba(0, 0, 0, 0.5),
+      0 6px 18px rgba(59, 130, 246, 0.6),
+      0 0 0 1px rgba(59, 130, 246, 0.5),
+      0 0 25px rgba(59, 130, 246, 0.3); /* Enhanced glow while drawing */
+    animation: magicalPulse 0.8s ease-in-out infinite alternate;
+    position: relative;
+  }
+
+  .canvas-interactive.drawing::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: linear-gradient(45deg, 
+      rgba(59, 130, 246, 0.4), 
+      rgba(147, 51, 234, 0.3), 
+      rgba(59, 130, 246, 0.4));
+    border-radius: 12px;
+    z-index: -1;
+    animation: magicalGlow 1.5s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes magicalPulse {
+    0% { 
+      box-shadow: 
+        0 12px 35px rgba(0, 0, 0, 0.5),
+        0 6px 18px rgba(59, 130, 246, 0.6),
+        0 0 0 1px rgba(59, 130, 246, 0.5),
+        0 0 25px rgba(59, 130, 246, 0.3);
+    }
+    100% { 
+      box-shadow: 
+        0 12px 35px rgba(0, 0, 0, 0.5),
+        0 6px 18px rgba(59, 130, 246, 0.8),
+        0 0 0 1px rgba(59, 130, 246, 0.7),
+        0 0 35px rgba(59, 130, 246, 0.5);
+    }
+  }
+
+  @keyframes magicalGlow {
+    0% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0.6;
+      transform: scale(1.02);
+    }
   }
 
   .loading-overlay,
