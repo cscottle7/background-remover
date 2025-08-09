@@ -6,7 +6,7 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
-  import { appActions } from '$lib/stores/appState.js';
+  import { appActions } from '$lib/stores/appState';
   
   // Ensure dark theme is applied
   onMount(() => {

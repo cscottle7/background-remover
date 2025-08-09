@@ -6,7 +6,7 @@
 
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { refinementState, refinementActions, refinementTools } from '$lib/stores/refinementState.js';
+  import { refinementState, refinementActions, refinementTools } from '$lib/stores/refinementState';
   
   const dispatch = createEventDispatcher();
   

@@ -7,7 +7,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
-  import { refinementState, refinementActions } from '$lib/stores/refinementState.js';
+  import { refinementState, refinementActions } from '$lib/stores/refinementState';
   import { observeCanvasContainer, type LayoutDimensions } from '$lib/services/layoutObserverService';
   
   export let originalImage: string | null;
