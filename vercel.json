@@ -6,8 +6,7 @@
       "config": {
         "buildCommand": "cd frontend && npm ci --frozen-lockfile && npx svelte-kit sync && npm run build",
         "outputDirectory": "frontend/build",
-        "installCommand": "cd frontend && npm ci --frozen-lockfile",
-        "nodeVersion": "18.x"
+        "installCommand": "cd frontend && npm ci --frozen-lockfile"
       }
     }
   ],
