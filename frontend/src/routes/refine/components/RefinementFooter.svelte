@@ -4,7 +4,7 @@
 -->
 
 <script lang="ts">
-  import { refinementState, refinementActions, keyboardShortcuts } from '$lib/stores/refinementState';
+  import { refinementState, refinementActions, keyboardShortcuts } from '$lib/stores/refinementState.js';
   import { onMount, onDestroy } from 'svelte';
   
   // Reactive state from store

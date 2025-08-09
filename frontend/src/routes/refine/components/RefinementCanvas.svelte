@@ -7,7 +7,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { refinementState, refinementActions } from '$lib/stores/refinementState';
+  import { refinementState, refinementActions } from '$lib/stores/refinementState.js';
   
   export let originalImage: string | null;
   export let processedImage: string | null;

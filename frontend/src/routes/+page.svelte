@@ -16,10 +16,10 @@
   import ModelSelector from '$lib/components/ModelSelector.svelte';
   import ImageRefinementEditor from '$lib/components/ImageRefinementEditor.svelte';
   import BatchProcessor from '$lib/components/BatchProcessor.svelte';
-  import { appState, appActions } from '$lib/stores/appState';
+  import { appState, appActions } from '$lib/stores/appState.js';
   import { realTimeStatusService } from '$lib/services/realTimeStatus';
-  import { inputActions } from '$lib/stores/inputState';
-  import { continuityActions, continuityStatus } from '$lib/stores/sessionContinuity';
+  import { inputActions } from '$lib/stores/inputState.js';
+  import { continuityActions, continuityStatus } from '$lib/stores/sessionContinuity.js';
   import { apiService } from '$lib/services/api';
   import { progressiveErrorRecovery } from '$lib/services/errorRecovery';
   import { clipboardService } from '$lib/services/clipboard';

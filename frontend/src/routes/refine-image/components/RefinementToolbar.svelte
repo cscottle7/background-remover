@@ -6,7 +6,7 @@
 
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { refinementState, refinementActions } from '$lib/stores/refinementState';
+  import { refinementState, refinementActions } from '$lib/stores/refinementState.js';
   import ContextualTooltip from './ContextualTooltip.svelte';
   
   const dispatch = createEventDispatcher();
