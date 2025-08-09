@@ -6,6 +6,9 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	},
+	resolve: {
+		extensions: ['.svelte', '.ts', '.js', '.json']
+	},
 	server: {
 		port: 3002,
 		host: '0.0.0.0',
