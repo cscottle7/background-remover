@@ -88,5 +88,7 @@ export default {
     base: false,
     styled: true,
     utils: true,
+    // Disable specific DaisyUI utilities that conflict with our custom classes
+    prefix: "daisy-",  // Prefix DaisyUI utilities to prevent conflicts
   },
 }

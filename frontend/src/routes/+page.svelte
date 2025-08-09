@@ -648,7 +648,7 @@
           />
           
           <!-- Batch Processing Button -->
-          <div class="text-center mt-6">
+          <div class="text-center batch-button-container mt-6">
             <button
               on:click={() => showBatchProcessor = true}
               class="btn btn-outline border-magic-400 text-magic-400 hover:bg-magic-400 hover:text-white py-2 px-4 rounded-lg font-medium text-sm"
@@ -664,7 +664,7 @@
       
       {#if (processing || isRefining) && currentImageData}
         <!-- Processing State with Magic Scanline -->
-        <div class="max-w-4xl mx-auto">
+        <div class="processing-section">
           <div class="processing-container">
             
             <!-- Enhanced Scanline Processor Component -->
@@ -694,20 +694,6 @@
             </div>
             
           </div>
-        </div>
-      {/if}
-      
-      {#if result && showPreview && currentImageData}
-        <!-- Auto-Proceeding Preview State -->
-        <div class="max-w-4xl mx-auto">
-          <BeforeAfterPreview
-            originalImage={currentImageData}
-            processedResult={result}
-            autoProceeds={false}
-            autoProceedDelay={3000}
-            on:proceed={handlePreviewAction}
-            on:stay={handlePreviewStay}
-          />
         </div>
       {/if}
       
@@ -795,6 +781,20 @@
       
     </div>
   </section>
+  
+  <!-- Full Width Preview - Outside Container -->
+  {#if result && showPreview && currentImageData}
+    <section class="preview-section py-8">
+      <BeforeAfterPreview
+        originalImage={currentImageData}
+        processedResult={result}
+        autoProceeds={false}
+        autoProceedDelay={3000}
+        on:proceed={handlePreviewAction}
+        on:stay={handlePreviewStay}
+      />
+    </section>
+  {/if}
   
   <!-- Features Section -->
   {#if !processing && !result && !showPreview}
@@ -927,11 +927,17 @@
   }
   
   .processing-container {
-    position: relative;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    min-height: 400px;
+    /* Absolute positioning for perfect centering */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    /* Size constraints */
+    width: min(900px, 90vw);
+    min-height: min(400px, 60vh);
+    
+    /* Styling */
     background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(38, 38, 38, 0.9) 100%);
     border: 1px solid rgba(0, 255, 136, 0.2);
     border-radius: 12px;
@@ -939,6 +945,14 @@
     box-shadow: 
       0 25px 50px -12px rgba(0, 0, 0, 0.4),
       0 0 0 1px rgba(255, 255, 255, 0.05);
+    
+    /* Flexbox for internal content alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Ensure proper box-sizing */
+    box-sizing: border-box;
   }
   
   .success-card,
@@ -981,6 +995,35 @@
   
   .animate-shimmer {
     animation: shimmer 2s ease-in-out infinite;
+  }
+  
+  /* Processing section with absolute positioning for foolproof centering */
+  .processing-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    /* Remove flexbox - we'll use absolute positioning instead */
+  }
+  
+  @media (max-width: 768px) {
+    .processing-container {
+      width: min(95vw, 600px);
+      min-height: min(350px, 50vh);
+      /* Absolute positioning maintains perfect centering */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .processing-container {
+      width: min(calc(100vw - 24px), 400px);
+      min-height: min(300px, 45vh);
+      /* Absolute positioning maintains perfect centering */
+    }
   }
   
   /* Processing container enhancements */

@@ -39,6 +39,48 @@
     @apply bg-gradient-to-r from-magic-400 to-magic-600 text-white font-semibold;
     @apply hover:from-magic-500 hover:to-magic-700 transform hover:scale-105;
     @apply transition-all duration-200 shadow-lg hover:shadow-magic-400/25;
+    @apply flex items-center justify-center;
+  }
+  
+  /* Button alignment fix for DaisyUI conflicts */
+  .btn, .btn-outline, .btn-magic {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+  }
+  
+  /* Button outline styling fix */
+  .btn-outline {
+    border-width: 1px !important;
+    border-style: solid !important;
+    background-color: transparent !important;
+  }
+  
+  .btn-outline.border-magic-400 {
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+  }
+  
+  .btn-outline.border-magic-400:hover {
+    background-color: #38bdf8 !important;
+    color: white !important;
+  }
+  
+  /* Ensure button containers are properly centered - specific to button containers only */
+  .text-center:has(button) {
+    text-align: center !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  
+  /* Fallback for browsers that don't support :has() - target the specific button container */
+  .batch-button-container {
+    text-align: center !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
   
   /* Scanline effect for processing animation */
@@ -246,5 +288,29 @@
   
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Container centering fix with high specificity */
+  .container {
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem !important;
+      padding-right: 1.5rem !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      max-width: 100% !important;
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
+    }
   }
 }
