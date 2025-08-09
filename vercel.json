@@ -4,8 +4,10 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "npm ci && npm run build",
-        "outputDirectory": "build"
+        "buildCommand": "cd frontend && npm ci --frozen-lockfile && npx svelte-kit sync && npm run build",
+        "outputDirectory": "frontend/build",
+        "installCommand": "cd frontend && npm ci --frozen-lockfile",
+        "nodeVersion": "18.x"
       }
     }
   ],
@@ -17,5 +19,10 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "frontend/build/**": {
+      "excludeFiles": "**"
+    }
+  }
 }

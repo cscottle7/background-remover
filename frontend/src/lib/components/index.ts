@@ -1,0 +1,21 @@
+// Explicit component exports to avoid case sensitivity issues
+export { default as AnalyticsDashboard } from './AnalyticsDashboard.svelte';
+export { default as BatchProcessor } from './BatchProcessor.svelte';
+export { default as BeforeAfterPreview } from './BeforeAfterPreview.svelte';
+export { default as CompatibilityTest } from './CompatibilityTest.svelte';
+export { default as DownloadOptions } from './DownloadOptions.svelte';
+export { default as ErrorDisplay } from './ErrorDisplay.svelte';
+export { default as FeedbackCollection } from './FeedbackCollection.svelte';
+export { default as ImageCropper } from './ImageCropper.svelte';
+export { default as ImageRefinementEditor } from './ImageRefinementEditor.svelte';
+export { default as MagicScanline } from './MagicScanline.svelte';
+export { default as ModelSelector } from './ModelSelector.svelte';
+export { default as NPSSurvey } from './NPSSurvey.svelte';
+export { default as ProcessingFeedback } from './ProcessingFeedback.svelte';
+export { default as RealTimeStatus } from './RealTimeStatus.svelte';
+export { default as RefineCanvas } from './RefineCanvas.svelte';
+export { default as RefineToolbox } from './RefineToolbox.svelte';
+export { default as ScanlineProcessor } from './ScanlineProcessor.svelte';
+export { default as Toast } from './Toast.svelte';
+export { default as ToastManager } from './ToastManager.svelte';
+export { default as UnifiedInput } from './UnifiedInput.svelte';
