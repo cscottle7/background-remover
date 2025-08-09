@@ -1,179 +1,121 @@
-analytics.ts:80 📊 Analytics Event: {event_type: 'session_start', session_hash: 'session_r9if4j', timestamp: '2025-07-30T14:16:21.835Z', data: {…}}
-browserCompatibility.ts:92 Starting comprehensive browser compatibility test...
-analytics.ts:80 📊 Analytics Event: {event_type: 'unique_session', session_hash: 'session_r9if4j', timestamp: '2025-07-30T14:16:21.873Z', data: {…}}
-browserCompatibility.ts:126 Browser compatibility test completed: {browser: 'Chrome 138', timestamp: '2025-07-30T14:16:21.869Z', overallCompatibility: 'good', score: 89, capabilities: {…}, …}
-gracefulDegradation.ts:79 Graceful degradation initialized: {compatibility: 'good', score: 89, fallbacks: {…}}
-inputState.ts:122 Input state: idle -> active (UPLOAD_CLICK)
-inputState.ts:122 Input state: active -> processing (FILE_SELECTED)
-inputState.ts:122 Input state: processing -> success (PROCESS_COMPLETE)
-analytics.ts:80 📊 Analytics Event: {event_type: 'processing_start', session_hash: 'session_r9if4j', timestamp: '2025-07-30T14:16:27.905Z', data: {…}}
-api.ts:65 === API REQUEST START ===
-api.ts:66 URL: http://localhost:8000/process
-api.ts:67 Method: POST
-api.ts:68 FormData file: currency-token.jpg image/jpeg 1616352
-ScanlineProcessor.svelte:338 Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
-drawBackgroundDissolution @ ScanlineProcessor.svelte:338
-drawFrame @ ScanlineProcessor.svelte:170
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-requestAnimationFrame
-drawFrame @ ScanlineProcessor.svelte:174
-+page.svelte:524 Scanline processing phase completed
-+page.svelte:524 Scanline processing phase completed
-api.ts:70  POST http://localhost:8000/process 500 (Internal Server Error)
-window.fetch @ fetcher.js?v=b0fd4a4b:62
-processImageWithSession @ api.ts:70
-processWithRecovery @ errorRecovery.ts:87
-await in processWithRecovery
-handleImageSelected @ +page.svelte:97
-await in handleImageSelected
-(anonymous) @ chunk-ZOAWO7US.js?v=b0fd4a4b:1253
-(anonymous) @ chunk-ZOAWO7US.js?v=b0fd4a4b:1252
-handleFiles @ UnifiedInput.svelte:99
-await in handleFiles
-handleFileInputChange @ UnifiedInput.svelte:156
-api.ts:82 === API RESPONSE RECEIVED ===
-api.ts:83 Status: 500 Internal Server Error
-api.ts:84 Content-Type: application/json
-api.ts:85 Content-Length: 55
-api.ts:86 All headers: {content-length: '55', content-type: 'application/json'}
-api.ts:89 === ERROR RESPONSE ===
-api.ts:91 Error data: {detail: 'Image processing failed. Please try again.'}
-api.ts:130 === API REQUEST FAILED ===
-api.ts:131 Error type: APIError
-api.ts:132 Error message: Image processing failed. Please try again.
-api.ts:133 Error stack: APIError: Image processing failed. Please try again.
-    at APIService.processImageWithSession (http://localhost:3001/src/lib/services/api.ts:62:15)
-    at async ProgressiveErrorRecovery.processWithRecovery (http://localhost:3001/src/lib/services/errorRecovery.ts:37:24)
-    at async UnifiedInput.handleImageSelected (http://localhost:3001/src/routes/+page.svelte:1910:27)
-api.ts:134 Processing time: 13404
-api.ts:137 APIError status: 500
-api.ts:138 APIError response: {detail: 'Image processing failed. Please try again.'}
-api.ts:281 Processing metrics: {processingId: 'failed', processingTime: 13404, success: false, error: 'Image processing failed. Please try again.', timestamp: '2025-07-30T14:16:41.361Z', …}
-errorRecovery.ts:138 Recovery attempt 1 failed with strategy retry_original: Image processing failed. Please try again.
-overrideMethod @ hook.js:608
-warn @ client.js?v=b0fd4a4b:2098
-processWithRecovery @ errorRecovery.ts:138
-await in processWithRecovery
-handleImageSelected @ +page.svelte:97
-await in handleImageSelected
-(anonymous) @ chunk-ZOAWO7US.js?v=b0fd4a4b:1253
-(anonymous) @ chunk-ZOAWO7US.js?v=b0fd4a4b:1252
-handleFiles @ UnifiedInput.svelte:99
-await in handleFiles
-handleFileInputChange @ UnifiedInput.svelte:156
-errorRecovery.ts:139 Error classification: {category: 'processing_failure', severity: 'medium', userMessage: 'Processing failed. This sometimes happens with complex images.', technicalMessage: 'Image processing failed. Please try again.', recoverable: true, …}
-api.ts:65 === API REQUEST START ===
-api.ts:66 URL: http://localhost:8000/process
-api.ts:67 Method: POST
-api.ts:68 FormData file: currency-token.jpg image/jpeg 443004
-api.ts:70  POST http://localhost:8000/process 500 (Internal Server Error)
-window.fetch @ fetcher.js?v=b0fd4a4b:62
-processImageWithSession @ api.ts:70
-processWithRecovery @ errorRecovery.ts:87
-await in processWithRecovery
-handleImageSelected @ +page.svelte:97
-await in handleImageSelected
-(anonymous) @ chunk-ZOAWO7US.js?v=b0fd4a4b:1253
-(anonymous) @ chunk-ZOAWO7US.js?v=b0fd4a4b:1252
-handleFiles @ UnifiedInput.svelte:99
-await in handleFiles
-handleFileInputChange @ UnifiedInput.svelte:156
-api.ts:82 === API RESPONSE RECEIVED ===
-api.ts:83 Status: 500 Internal Server Error
-api.ts:84 Content-Type: application/json
-api.ts:85 Content-Length: 55
-api.ts:86 All headers: {content-length: '55', content-type: 'application/json'}
-api.ts:89 === ERROR RESPONSE ===
-api.ts:91 Error data: {detail: 'Image processing failed. Please try again.'}
-api.ts:130 === API REQUEST FAILED ===
-api.ts:131 Error type: APIError
-api.ts:132 Error message: Image processing failed. Please try again.
-api.ts:133 Error stack: APIError: Image processing failed. Please try again.
-    at APIService.processImageWithSession (http://localhost:3001/src/lib/services/api.ts:62:15)
-    at async ProgressiveErrorRecovery.processWithRecovery (http://localhost:3001/src/lib/services/errorRecovery.ts:37:24)
-    at async UnifiedInput.handleImageSelected (http://localhost:3001/src/routes/+page.svelte:1910:27)
-api.ts:134 Processing time: 10358
-api.ts:137 APIError status: 500
-api.ts:138 APIError response: {detail: 'Image processing failed. Please try again.'}
-api.ts:281 Processing metrics: {processingId: 'failed', processingTime: 10358, success: false, error: 'Image processing failed. Please try again.', timestamp: '2025-07-30T14:16:54.578Z', …}
-errorRecovery.ts:138 Recovery attempt 2 failed with strategy compress_image: Image processing failed. Please try again.
-overrideMethod @ hook.js:608
-warn @ client.js?v=b0fd4a4b:2098
-processWithRecovery @ errorRecovery.ts:138
-await in processWithRecovery
-handleImageSelected @ +page.svelte:97
-errorRecovery.ts:139 Error classification: {category: 'processing_failure', severity: 'high', userMessage: "We're having trouble processing this image. The AI…l might be struggling with this particular image.", technicalMessage: 'Image processing failed. Please try again.', recoverable: false, …}
-inputState.ts:108 Invalid transition: success -> PROCESS_ERROR
-overrideMethod @ hook.js:608
-warn @ client.js?v=b0fd4a4b:2098
-(anonymous) @ inputState.ts:108
-update @ chunk-LTWQQ7UU.js?v=b0fd4a4b:38
-transition @ inputState.ts:102
-errorProcessing @ inputState.ts:213
-handleImageSelected @ +page.svelte:166
-analytics.ts:80 📊 Analytics Event: {event_type: 'task_completion', session_hash: 'session_r9if4j', timestamp: '2025-07-30T14:16:54.584Z', data: {…}}
-sessionContinuity.ts:233 Session continuity event: {type: 'image_failed', timestamp: 1753885014615, sessionId: null, data: {…}}
-browserCompatibility.ts:92 Starting comprehensive browser compatibility test...
-browserCompatibility.ts:126 Browser compatibility test completed: {browser: 'Chrome 138', timestamp: '2025-07-30T14:16:54.635Z', overallCompatibility: 'good', score: 89, capabilities: {…}, …}
-gracefulDegradation.ts:79 Graceful degradation initialized: {compatibility: 'good', score: 89, fallbacks: {…}}
+analytics.ts:80 📊 Analytics Event: {event_type: 'session_start', session_hash: 'session_6wx2v4', timestamp: '2025-08-08T12:08:13.109Z', data: {…}}
+UnifiedInput.svelte:32 🔍 UnifiedInput component mounted
+UnifiedInput.svelte:36 🔍 Clipboard supported: true
+analytics.ts:80 📊 Analytics Event: {event_type: 'unique_session', session_hash: 'session_6wx2v4', timestamp: '2025-08-08T12:08:13.152Z', data: {…}}
+// Enhanced Container Identification Script
+// Copy and paste this into browser console to identify which containers are off-center
+
+console.log('🔍 IDENTIFYING OFF-CENTER CONTAINERS');
+console.log('===================================');
+
+const containers = document.querySelectorAll('.container');
+console.log(`Found ${containers.length} container elements\n`);
+
+containers.forEach((container, i) => {
+  const rect = container.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const viewportCenterX = window.innerWidth / 2;
+  const offset = Math.abs(centerX - viewportCenterX);
+  
+  // Get container identification info
+  const parent = container.parentElement;
+  const parentClass = parent ? parent.className : 'no parent';
+  const parentTag = parent ? parent.tagName.toLowerCase() : 'no parent';
+  const containerClasses = container.className;
+  const containerText = container.innerText.substring(0, 50) + '...';
+  
+  console.log(`\n📦 CONTAINER ${i + 1}:`);
+  console.log(`   Offset: ${offset.toFixed(1)}px ${offset < 5 ? '✅ CENTERED' : '❌ OFF-CENTER'}`);
+  console.log(`   Classes: "${containerClasses}"`);
+  console.log(`   Parent: <${parentTag} class="${parentClass}">`);
+  console.log(`   Content preview: "${containerText.trim()}"`);
+  console.log(`   Position: left=${rect.left.toFixed(1)}px, width=${rect.width.toFixed(1)}px`);
+  
+  // Add visual indicator
+  if (offset < 5) {
+    container.style.outline = '3px solid green';
+    container.style.outlineOffset = '2px';
+  } else {
+    container.style.outline = '3px solid red';
+    container.style.outlineOffset = '2px';
+  }
+  
+  // Add label
+  const label = document.createElement('div');
+  label.innerHTML = `Container ${i + 1}<br/>${offset.toFixed(1)}px offset`;
+  label.style.cssText = `
+    position: absolute;
+    top: ${rect.top + window.scrollY - 30}px;
+    left: ${rect.left}px;
+    background: ${offset < 5 ? 'green' : 'red'};
+    color: white;
+    padding: 4px 8px;
+    font-size: 12px;
+    z-index: 9999;
+    border-radius: 4px;
+    font-family: monospace;
+    line-height: 1.2;
+  `;
+  document.body.appendChild(label);
+});
+
+console.log('\n🎯 SUMMARY:');
+console.log('Green outline + label = Centered containers');
+console.log('Red outline + label = Off-center containers');
+console.log('Look for the consistent 61.5px offset pattern!');
+VM28602:4 🔍 IDENTIFYING OFF-CENTER CONTAINERS
+VM28602:5 ===================================
+VM28602:8 Found 5 container elements
+
+VM28602:23 
+📦 CONTAINER 1:
+VM28602:24    Offset: 3.7px ✅ CENTERED
+VM28602:25    Classes: "container mx-auto px-4 py-4 s-7IPF32Wcq3s8"
+VM28602:26    Parent: <header class="border-b border-dark-border bg-dark-surface/50 backdrop-blur-sm sticky top-0 z-50 s-7IPF32Wcq3s8">
+VM28602:27    Content preview: "CharacterCut
+
+R&D Initiative
+
+System Online..."
+VM28602:28    Position: left=0.0px, width=883.6px
+VM28602:23 
+📦 CONTAINER 2:
+VM28602:24    Offset: 61.5px ❌ OFF-CENTER
+VM28602:25    Classes: "container text-center s-y_bCXRrkrYfP"
+VM28602:26    Parent: <section class="hero py-12 sm:py-20 s-y_bCXRrkrYfP">
+VM28602:27    Content preview: "Transform Characters
+with Magic
+
+Watch backgrounds..."
+VM28602:28    Position: left=0.0px, width=768.0px
+VM28602:23 
+📦 CONTAINER 3:
+VM28602:24    Offset: 61.5px ❌ OFF-CENTER
+VM28602:25    Classes: "container s-y_bCXRrkrYfP"
+VM28602:26    Parent: <section class="interface py-8 s-y_bCXRrkrYfP">
+VM28602:27    Content preview: "Place Character Here
+
+Watch backgrounds disappear ..."
+VM28602:28    Position: left=0.0px, width=768.0px
+VM28602:23 
+📦 CONTAINER 4:
+VM28602:24    Offset: 61.5px ❌ OFF-CENTER
+VM28602:25    Classes: "container s-y_bCXRrkrYfP"
+VM28602:26    Parent: <section class="features py-16 sm:py-24 s-y_bCXRrkrYfP">
+VM28602:27    Content preview: "Built for Developer Workflow
+
+Designed for speed a..."
+VM28602:28    Position: left=0.0px, width=768.0px
+VM28602:23 
+📦 CONTAINER 5:
+VM28602:24    Offset: 3.7px ✅ CENTERED
+VM28602:25    Classes: "container mx-auto px-4 py-6 s-7IPF32Wcq3s8"
+VM28602:26    Parent: <footer class="border-t border-dark-border bg-dark-surface/30 mt-auto s-7IPF32Wcq3s8">
+VM28602:27    Content preview: "© 2025 CharacterCut. Research & Development Initia..."
+VM28602:28    Position: left=0.0px, width=883.6px
+VM28602:58 
+🎯 SUMMARY:
+VM28602:59 Green outline + label = Centered containers
+VM28602:60 Red outline + label = Off-center containers
+VM28602:61 Look for the consistent 61.5px offset pattern!
+undefined

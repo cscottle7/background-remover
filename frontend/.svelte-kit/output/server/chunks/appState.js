@@ -1,4 +1,4 @@
-import { w as writable, d as derived } from "./index.js";
+import { w as writable, d as derived } from "./index2.js";
 const sessionId = writable(generateSessionId());
 const sessionData = writable({
   imagesProcessed: 0,

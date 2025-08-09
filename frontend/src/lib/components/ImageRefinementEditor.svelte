@@ -29,7 +29,7 @@
   let previewCtx: CanvasRenderingContext2D;
   
   // Tool state
-  let currentTool: 'restore' | 'erase' | 'smart-restore' | 'precision-erase' | 'edge-refine' | 'smart-background-erase' | 'smart-background-restore' = 'restore';
+  let currentTool: 'restore' | 'erase' | 'precision-erase' | 'edge-refine' | 'smart-background-erase' | 'smart-background-restore' = 'restore';
   let isDrawing = false;
   let isCurrentlyDrawing = false; // Simpler flag for blocking slider updates during drawing
   let canvasWidth = 600;
@@ -551,75 +551,19 @@
         console.log('Painted basic restore stroke at:', { x, y, radius: brushSize / 2 });
         break;
         
-      case 'smart-restore':
-        // ENHANCED SMART RESTORE with edge-aware gradient blending
+      case 'erase':
         maskCtx.globalCompositeOperation = 'source-over';
-        
-        // Create sophisticated gradient for smart restoration
-        const smartGradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushSize / 2);
-        
-        // Multi-stop gradient for better edge blending
-        smartGradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');     // Full opacity at center
-        smartGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.95)');  // Strong inner area
-        smartGradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.7)');   // Moderate middle
-        smartGradient.addColorStop(0.85, 'rgba(255, 255, 255, 0.4)');  // Soft outer edge
-        smartGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');     // Very soft falloff
-        
         maskCtx.beginPath();
         maskCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
-        maskCtx.fillStyle = smartGradient;
+        maskCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         maskCtx.fill();
-        
-        // Add additional edge-aware blending layer
-        if (originalCtx && processedCtx) {
-          try {
-            // Sample surrounding area for edge detection
-            const sampleRadius = Math.max(2, Math.floor(brushSize / 4));
-            const leftX = Math.max(0, x - sampleRadius);
-            const rightX = Math.min(canvasWidth - 1, x + sampleRadius);
-            const topY = Math.max(0, y - sampleRadius);
-            const bottomY = Math.min(canvasHeight - 1, y + sampleRadius);
-            
-            const originalSample = originalCtx.getImageData(leftX, topY, rightX - leftX, bottomY - topY);
-            const processedSample = processedCtx.getImageData(leftX, topY, rightX - leftX, bottomY - topY);
-            
-            // Calculate edge strength in the area
-            let edgeStrength = 0;
-            for (let i = 0; i < originalSample.data.length; i += 4) {
-              const origLum = (originalSample.data[i] * 0.299 + originalSample.data[i + 1] * 0.587 + originalSample.data[i + 2] * 0.114);
-              const procLum = (processedSample.data[i] * 0.299 + processedSample.data[i + 1] * 0.587 + processedSample.data[i + 2] * 0.114);
-              edgeStrength += Math.abs(origLum - procLum);
-            }
-            edgeStrength /= (originalSample.data.length / 4);
-            
-            // Apply additional feathering for high-edge areas
-            if (edgeStrength > 30) {
-              const featherGradient = maskCtx.createRadialGradient(x, y, brushSize * 0.2, x, y, brushSize * 0.8);
-              featherGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-              featherGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
-              featherGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
-              
-              maskCtx.globalCompositeOperation = 'multiply';
-              maskCtx.beginPath();
-              maskCtx.arc(x, y, brushSize * 0.8, 0, 2 * Math.PI);
-              maskCtx.fillStyle = featherGradient;
-              maskCtx.fill();
-              maskCtx.globalCompositeOperation = 'source-over';
-            }
-            
-          } catch (error) {
-            console.warn('Smart restore edge detection failed, falling back to basic gradient:', error);
-          }
-        }
-        
-        console.log('Painted SMART restore stroke with gradient blending at:', { x, y, radius: brushSize / 2 });
+        console.log('Painted basic erase stroke at:', { x, y, radius: brushSize / 2 });
         break;
         
-      case 'erase':
       case 'precision-erase':
         maskCtx.globalCompositeOperation = 'destination-out';
         maskCtx.beginPath();
-        const eraseSize = currentTool === 'precision-erase' ? brushSize * 0.7 : brushSize;
+        const eraseSize = brushSize * 0.7; // Precision erase uses smaller size
         maskCtx.arc(x, y, eraseSize / 2, 0, 2 * Math.PI);
         maskCtx.fillStyle = 'rgba(255, 255, 255, 1.0)';
         maskCtx.fill();
@@ -1290,13 +1234,9 @@
         tempCtx.fillStyle = 'rgba(0, 255, 136, 0.3)';
         tempCtx.strokeStyle = 'rgba(0, 255, 136, 0.8)';
         break;
-      case 'smart-restore':
-        tempCtx.fillStyle = 'rgba(0, 255, 136, 0.4)';
-        tempCtx.strokeStyle = 'rgba(0, 255, 136, 1.0)';
-        break;
       case 'erase':
-        tempCtx.fillStyle = 'rgba(255, 68, 68, 0.3)';
-        tempCtx.strokeStyle = 'rgba(255, 68, 68, 0.8)';
+        tempCtx.fillStyle = 'rgba(255, 136, 68, 0.4)';
+        tempCtx.strokeStyle = 'rgba(255, 136, 68, 1.0)';
         break;
       case 'precision-erase':
         tempCtx.fillStyle = 'rgba(255, 68, 68, 0.4)';
@@ -1399,6 +1339,68 @@
               </div>
             {/if}
             
+            <!-- Quick Background Tools - Moved to top -->
+            <div class="background-tools-section">
+              <h4 class="section-title">Quick Background Tools</h4>
+              <p class="control-description">Quickly erase or restore similar background colors</p>
+              
+              <div class="background-tolerance-controls">
+                <div class="slider-value-display">
+                  <span class="slider-value">{backgroundTolerance}%</span>
+                  <span class="slider-status">Tolerance</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="50"
+                  bind:value={backgroundTolerance}
+                  class="tolerance-slider"
+                  title="Color similarity tolerance for background operations"
+                />
+                <div class="slider-labels">
+                  <span class="slider-label-left">Precise</span>
+                  <span class="slider-label-right">Broad</span>
+                </div>
+              </div>
+              
+              <div class="quick-background-buttons">
+                <button
+                  on:click={smartBackgroundErase}
+                  on:mouseenter={showTolerancePreviewOverlay}
+                  on:mouseleave={hideTolerancePreviewOverlay}
+                  class="quick-bg-btn erase"
+                  title="Click on background area to erase similar colors (hover to preview affected areas)"
+                  disabled={isCurrentlyDrawing}
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Smart Background Erase
+                  {#if showTolerancePreview}
+                    <span class="tolerance-preview-indicator">👁️</span>
+                  {/if}
+                </button>
+                
+                <button
+                  on:click={smartBackgroundRestore}
+                  on:mouseenter={showTolerancePreviewOverlay}
+                  on:mouseleave={hideTolerancePreviewOverlay}
+                  class="quick-bg-btn restore"
+                  title="Click on area to restore similar background colors (hover to preview affected areas)"
+                  disabled={isCurrentlyDrawing}
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  Smart Background Restore
+                  {#if showTolerancePreview}
+                    <span class="tolerance-preview-indicator">👁️</span>
+                  {/if}
+                </button>
+              </div>
+            </div>
+            
+            <!-- Main Tool Buttons -->
             <div class="tool-buttons">
               <button
                 class="tool-button {currentTool === 'restore' ? 'active' : ''}"
@@ -1412,20 +1414,9 @@
               </button>
               
               <button
-                class="tool-button {currentTool === 'smart-restore' ? 'active' : ''}"
-                on:click={() => currentTool = 'smart-restore'}
-                title="Smart restore - intelligently restore with better blending"
-              >
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                </svg>
-                Smart Restore
-              </button>
-              
-              <button
                 class="tool-button {currentTool === 'erase' ? 'active' : ''}"
                 on:click={() => currentTool = 'erase'}
-                title="Basic eraser - remove unwanted parts"
+                title="Basic eraser - remove pixels to make transparent"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -1520,67 +1511,6 @@
             </div>
           </div>
           
-          <!-- Quick Background Tools -->
-          <div class="background-tools-section">
-            <h4 class="section-title">Quick Background Tools</h4>
-            <p class="control-description">Quickly erase or restore similar background colors</p>
-            
-            <div class="background-tolerance-controls">
-              <div class="slider-value-display">
-                <span class="slider-value">{backgroundTolerance}%</span>
-                <span class="slider-status">Tolerance</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="50"
-                bind:value={backgroundTolerance}
-                class="tolerance-slider"
-                title="Color similarity tolerance for background operations"
-              />
-              <div class="slider-labels">
-                <span class="slider-label-left">Precise</span>
-                <span class="slider-label-right">Broad</span>
-              </div>
-            </div>
-            
-            <div class="quick-background-buttons">
-              <button
-                on:click={smartBackgroundErase}
-                on:mouseenter={showTolerancePreviewOverlay}
-                on:mouseleave={hideTolerancePreviewOverlay}
-                class="quick-bg-btn erase"
-                title="Click on background area to erase similar colors (hover to preview affected areas)"
-                disabled={isCurrentlyDrawing}
-              >
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Smart Background Erase
-                {#if showTolerancePreview}
-                  <span class="tolerance-preview-indicator">👁️</span>
-                {/if}
-              </button>
-              
-              <button
-                on:click={smartBackgroundRestore}
-                on:mouseenter={showTolerancePreviewOverlay}
-                on:mouseleave={hideTolerancePreviewOverlay}
-                class="quick-bg-btn restore"
-                title="Click on area to restore similar background colors (hover to preview affected areas)"
-                disabled={isCurrentlyDrawing}
-              >
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Smart Background Restore
-                {#if showTolerancePreview}
-                  <span class="tolerance-preview-indicator">👁️</span>
-                {/if}
-              </button>
-            </div>
-          </div>
-          
           <!-- Actions -->
           <div class="actions-section">
             <h4 class="section-title">Actions</h4>
@@ -1658,12 +1588,13 @@
                 {#if showBrushCursor}
                   <div 
                     class="dynamic-brush-cursor {currentTool}"
+                    class:drawing={isDrawing}
                     style="
                       left: {mouseX}px; 
                       top: {mouseY}px; 
                       width: {displayBrushSize}px; 
                       height: {displayBrushSize}px;
-                      opacity: {isDrawing ? 0.8 : 0.6}
+                      opacity: {isDrawing ? 0.3 : 0.6}
                     "
                   >
                   <!-- Inner dot for precision -->
@@ -1673,9 +1604,11 @@
                   {#if showBrushPreview && !isDrawing}
                     <div class="brush-preview-ring {currentTool}">
                       <div class="preview-indicator">
-                        {#if currentTool === 'restore' || currentTool === 'smart-restore'}
+                        {#if currentTool === 'restore'}
                           ↺
-                        {:else if currentTool === 'erase' || currentTool === 'precision-erase'}
+                        {:else if currentTool === 'erase'}
+                          ⌫
+                        {:else if currentTool === 'precision-erase'}
                           ✕
                         {:else if currentTool === 'edge-refine'}
                           ✨
@@ -1778,7 +1711,7 @@
   .tool-info-button-header {
     position: absolute;
     top: 10px;
-    right: 50px;
+    right: 120px; /* Moved further left to prevent overlap issues */
     background: transparent;
     border: 1px solid rgba(0, 255, 136, 0.2);
     border-radius: 50%;
@@ -2458,6 +2391,16 @@
     background: #ff4444;
   }
   
+  /* Reduce opacity and visual interference during drawing */
+  .dynamic-brush-cursor.drawing {
+    border-width: 1px;
+    background: transparent !important;
+  }
+  
+  .dynamic-brush-cursor.drawing .cursor-center {
+    opacity: 0.5;
+  }
+  
   .brush-preview-ring {
     position: absolute;
     width: 100%;
@@ -2470,25 +2413,13 @@
     animation: pulsePreview 2s ease-in-out infinite;
   }
   
-  .brush-preview-ring.restore,
-  .brush-preview-ring.smart-restore {
+  .brush-preview-ring.restore {
     border: 1px dashed #00ff88;
     background: rgba(0, 255, 136, 0.05);
   }
   
-  .brush-preview-ring.smart-restore {
-    border-width: 2px;
-    background: rgba(0, 255, 136, 0.1);
-  }
-  
-  .brush-preview-ring.erase,
   .brush-preview-ring.precision-erase {
-    border: 1px dashed #ff4444;
-    background: rgba(255, 68, 68, 0.05);
-  }
-  
-  .brush-preview-ring.precision-erase {
-    border-width: 2px;
+    border: 2px dashed #ff4444;
     background: rgba(255, 68, 68, 0.1);
   }
   
@@ -2503,12 +2434,10 @@
     opacity: 0.7;
   }
   
-  .brush-preview-ring.restore .preview-indicator,
-  .brush-preview-ring.smart-restore .preview-indicator {
+  .brush-preview-ring.restore .preview-indicator {
     color: #00ff88;
   }
   
-  .brush-preview-ring.erase .preview-indicator,
   .brush-preview-ring.precision-erase .preview-indicator {
     color: #ff4444;
   }

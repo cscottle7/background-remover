@@ -1,7 +1,7 @@
-import { n as noop, c as create_ssr_component, b as compute_rest_props, d as createEventDispatcher, o as onDestroy, f as spread, e as escape, h as escape_attribute_value, i as escape_object, j as add_attribute, a as subscribe, v as validate_component, k as assign, l as identity, p as each } from "../../chunks/ssr.js";
+import { n as noop, c as create_ssr_component, b as compute_rest_props, d as createEventDispatcher, o as onDestroy, f as spread, e as escape, g as escape_attribute_value, h as escape_object, i as add_attribute, v as validate_component, j as assign, k as identity, a as subscribe, l as each } from "../../chunks/ssr.js";
 import { fromEvent } from "file-selector";
+import { w as writable, d as derived } from "../../chunks/index2.js";
 import { a as appState } from "../../chunks/appState.js";
-import { d as derived, w as writable } from "../../chunks/index.js";
 const is_client = typeof window !== "undefined";
 let now = is_client ? () => window.performance.now() : () => Date.now();
 let raf = is_client ? (cb) => requestAnimationFrame(cb) : noop;
@@ -30,7 +30,7 @@ function loop(callback) {
   };
 }
 const Dropzone_svelte_svelte_type_style_lang = "";
-const css$5 = {
+const css$6 = {
   code: ".dropzone.svelte-817dg2{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;border-width:2px;border-radius:2px;border-color:#eeeeee;border-style:dashed;background-color:#fafafa;color:#bdbdbd;outline:none;transition:border 0.24s ease-in-out}.dropzone.svelte-817dg2:focus{border-color:#2196f3}",
   map: null
 };
@@ -111,7 +111,7 @@ const Dropzone = create_ssr_component(($$result, $$props, $$bindings, slots) => 
     $$bindings.inputElement(inputElement);
   if ($$props.required === void 0 && $$bindings.required && required !== void 0)
     $$bindings.required(required);
-  $$result.css.add(css$5);
+  $$result.css.add(css$6);
   defaultPlaceholderString = multiple ? "Drag 'n' drop some files here, or click to select files" : "Drag 'n' drop a file here, or click to select a file";
   return ` <div${spread(
     [
@@ -128,226 +128,12 @@ const Dropzone = create_ssr_component(($$result, $$props, $$bindings, slots) => 
     { classes: "svelte-817dg2" }
   )}${add_attribute("this", rootRef, 0)}><input${add_attribute("accept", accept?.toString(), 0)} ${multiple ? "multiple" : ""} ${required ? "required" : ""} type="file"${add_attribute("name", name, 0)} autocomplete="off" tabindex="-1" style="display: none;"> ${slots.default ? slots.default({}) : ` <p>${escape(defaultPlaceholderString)}</p> `} </div>`;
 });
-const inputState = writable({
-  currentState: "idle",
-  inputMethod: "none",
-  isDragActive: false,
-  isClipboardReady: false,
-  errorMessage: null,
-  successMessage: null,
-  canAcceptInput: true,
-  showPasteHint: true
-});
-const inputStatus = derived(inputState, ($state) => ({
-  isIdle: $state.currentState === "idle",
-  isActive: $state.currentState === "active" || $state.isDragActive,
-  isProcessing: $state.currentState === "processing",
-  hasError: $state.currentState === "error",
-  hasSuccess: $state.currentState === "success",
-  showDropZone: $state.canAcceptInput && ["idle", "hover", "active"].includes($state.currentState)
-}));
-const inputAnalytics = writable({
-  dragEvents: 0,
-  pasteEvents: 0,
-  uploadEvents: 0,
-  successfulInputs: 0,
-  failedInputs: 0,
-  averageInputTime: 0
-});
-const validTransitions = [
-  // From idle
-  { from: "idle", to: "hover", trigger: "DRAG_ENTER" },
-  { from: "idle", to: "active", trigger: "PASTE_READY", method: "paste" },
-  { from: "idle", to: "active", trigger: "UPLOAD_CLICK", method: "upload" },
-  { from: "idle", to: "processing", trigger: "FILE_SELECTED" },
-  // From hover
-  { from: "hover", to: "idle", trigger: "DRAG_LEAVE" },
-  { from: "hover", to: "active", trigger: "DRAG_OVER" },
-  { from: "hover", to: "processing", trigger: "DROP", method: "drop" },
-  // From active
-  { from: "active", to: "idle", trigger: "CANCEL" },
-  { from: "active", to: "processing", trigger: "FILE_SELECTED" },
-  { from: "active", to: "hover", trigger: "DRAG_LEAVE" },
-  // From processing
-  { from: "processing", to: "success", trigger: "PROCESS_COMPLETE" },
-  { from: "processing", to: "error", trigger: "PROCESS_ERROR" },
-  // From success
-  { from: "success", to: "idle", trigger: "RESET" },
-  { from: "success", to: "processing", trigger: "PROCESS_ANOTHER" },
-  // From error
-  { from: "error", to: "idle", trigger: "RESET" },
-  { from: "error", to: "processing", trigger: "RETRY" }
-];
-const inputActions = {
-  // Core state transitions
-  transition(trigger, method, data) {
-    inputState.update((current) => {
-      const validTransition = validTransitions.find(
-        (t) => t.from === current.currentState && t.trigger === trigger
-      );
-      if (!validTransition) {
-        console.warn(`Invalid transition: ${current.currentState} -> ${trigger}`);
-        return current;
-      }
-      const newState = {
-        ...current,
-        currentState: validTransition.to,
-        inputMethod: validTransition.method || method || current.inputMethod,
-        errorMessage: validTransition.to !== "error" ? null : current.errorMessage,
-        successMessage: validTransition.to !== "success" ? null : current.successMessage,
-        ...data
-      };
-      console.log(`Input state: ${current.currentState} -> ${newState.currentState} (${trigger})`);
-      return newState;
-    });
-  },
-  // Drag and drop actions
-  dragEnter() {
-    inputActions.transition("DRAG_ENTER");
-    inputState.update((state) => ({ ...state, isDragActive: true }));
-  },
-  dragLeave() {
-    inputActions.transition("DRAG_LEAVE");
-    inputState.update((state) => ({ ...state, isDragActive: false }));
-  },
-  dragOver() {
-    inputActions.transition("DRAG_OVER");
-  },
-  drop(files) {
-    if (files.length === 0)
-      return;
-    inputActions.transition("DROP", "drop");
-    inputState.update((state) => ({
-      ...state,
-      isDragActive: false,
-      canAcceptInput: false
-    }));
-    inputAnalytics.update((analytics) => ({
-      ...analytics,
-      dragEvents: analytics.dragEvents + 1
-    }));
-  },
-  // Clipboard actions
-  pasteReady() {
-    inputActions.transition("PASTE_READY", "paste");
-  },
-  paste() {
-    inputActions.transition("FILE_SELECTED", "paste");
-    inputState.update((state) => ({ ...state, canAcceptInput: false }));
-    inputAnalytics.update((analytics) => ({
-      ...analytics,
-      pasteEvents: analytics.pasteEvents + 1
-    }));
-  },
-  // Upload actions
-  uploadClick() {
-    inputActions.transition("UPLOAD_CLICK", "upload");
-  },
-  uploadSelected(file) {
-    inputActions.transition("FILE_SELECTED", "upload");
-    inputState.update((state) => ({ ...state, canAcceptInput: false }));
-    inputAnalytics.update((analytics) => ({
-      ...analytics,
-      uploadEvents: analytics.uploadEvents + 1
-    }));
-  },
-  // Processing actions
-  startProcessing() {
-    inputActions.transition("PROCESS_COMPLETE");
-  },
-  completeProcessing(successMessage = "Processing complete!") {
-    inputActions.transition("PROCESS_COMPLETE");
-    inputState.update((state) => ({
-      ...state,
-      successMessage,
-      canAcceptInput: true
-    }));
-    inputAnalytics.update((analytics) => ({
-      ...analytics,
-      successfulInputs: analytics.successfulInputs + 1
-    }));
-  },
-  errorProcessing(errorMessage) {
-    inputActions.transition("PROCESS_ERROR");
-    inputState.update((state) => ({
-      ...state,
-      errorMessage,
-      canAcceptInput: true
-    }));
-    inputAnalytics.update((analytics) => ({
-      ...analytics,
-      failedInputs: analytics.failedInputs + 1
-    }));
-  },
-  // Reset actions
-  reset() {
-    inputActions.transition("RESET");
-    inputState.update((state) => ({
-      ...state,
-      inputMethod: "none",
-      isDragActive: false,
-      errorMessage: null,
-      successMessage: null,
-      canAcceptInput: true
-    }));
-  },
-  processAnother() {
-    inputActions.transition("PROCESS_ANOTHER");
-    inputState.update((state) => ({
-      ...state,
-      inputMethod: "none",
-      isDragActive: false,
-      errorMessage: null,
-      successMessage: null,
-      canAcceptInput: true
-    }));
-  },
-  retry() {
-    inputActions.transition("RETRY");
-    inputState.update((state) => ({
-      ...state,
-      errorMessage: null,
-      canAcceptInput: true
-    }));
-  },
-  // Clipboard readiness detection
-  setClipboardReady(ready) {
-    inputState.update((state) => ({
-      ...state,
-      isClipboardReady: ready,
-      showPasteHint: ready
-    }));
-  },
-  // Validation and error handling
-  validateInput(file) {
-    const maxSize = 10 * 1024 * 1024;
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/bmp", "image/tiff"];
-    if (file.size > maxSize) {
-      return { valid: false, error: "File size too large (max 10MB)" };
-    }
-    if (!allowedTypes.includes(file.type.toLowerCase())) {
-      return { valid: false, error: "Unsupported file type" };
-    }
-    return { valid: true };
-  }
-};
-if (typeof window !== "undefined") {
-  const clipboardSupported = !!(navigator.clipboard && navigator.clipboard.read);
-  inputActions.setClipboardReady(clipboardSupported);
-}
 const UnifiedInput_svelte_svelte_type_style_lang = "";
-const css$4 = {
-  code: ".unified-input-container.svelte-1yokvc6{width:100%;max-width:600px;margin:0 auto}.dropzone.svelte-1yokvc6{position:relative;min-height:400px;border-radius:0.75rem;border:2px dashed rgba(156, 163, 175, 0.5);background-color:rgba(26, 26, 26, 0.8);transition:all 300ms ease-in-out;display:flex;align-items:center;justify-content:center;padding:2rem}.dropzone.svelte-1yokvc6:hover{background-color:rgba(38, 38, 38, 0.9);border-color:rgba(156, 163, 175, 0.7)}.dropzone-active.svelte-1yokvc6{border-color:rgba(0, 255, 136, 0.8);background-color:rgba(0, 255, 136, 0.05);box-shadow:0 25px 50px -12px rgba(0, 255, 136, 0.2);transform:scale(1.02);border-style:solid}.character-guide.svelte-1yokvc6{background-image:radial-gradient(circle at center, rgba(0, 255, 136, 0.1) 0%, transparent 70%);background-size:200px 200px;background-position:center;background-repeat:no-repeat}.kbd.svelte-1yokvc6{display:inline-flex;align-items:center;justify-content:center;padding:0.25rem 0.5rem;font-size:0.75rem;font-family:ui-monospace, SFMono-Regular, 'SF Mono', monospace;border-radius:0.25rem;border:1px solid rgba(156, 163, 175, 0.3);background-color:rgba(38, 38, 38, 0.8);min-width:1.5rem;height:1.5rem}",
+const css$5 = {
+  code: ".unified-input-container.svelte-1yokvc6{width:100%;max-width:600px;margin:0 auto}.dropzone.svelte-1yokvc6{position:relative;min-height:400px;border-radius:0.75rem;border:2px dashed rgba(156, 163, 175, 0.5);background-color:rgba(26, 26, 26, 0.8);transition:all 300ms ease-in-out;display:flex;align-items:center;justify-content:center;padding:2rem}.dropzone.svelte-1yokvc6:hover{background-color:rgba(38, 38, 38, 0.9);border-color:rgba(156, 163, 175, 0.7)}.dropzone-active.svelte-1yokvc6{border-color:rgba(0, 255, 136, 0.8);background-color:rgba(0, 255, 136, 0.05);box-shadow:0 25px 50px -12px rgba(0, 255, 136, 0.2);transform:scale(1.02);border-style:solid}.character-guide.svelte-1yokvc6{background-image:radial-gradient(circle at center, rgba(0, 255, 136, 0.1) 0%, transparent 70%);background-size:200px 200px;background-position:center;background-repeat:no-repeat}",
   map: null
 };
 const UnifiedInput = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  let currentInputState;
-  let dragActive;
-  let pasteSupported;
-  let $$unsubscribe_inputStatus;
-  let $inputState, $$unsubscribe_inputState;
-  $$unsubscribe_inputStatus = subscribe(inputStatus, (value) => value);
-  $$unsubscribe_inputState = subscribe(inputState, (value) => $inputState = value);
   let { disabled = false } = $$props;
   let { showPasteHint = true } = $$props;
   createEventDispatcher();
@@ -357,12 +143,7 @@ const UnifiedInput = create_ssr_component(($$result, $$props, $$bindings, slots)
     $$bindings.disabled(disabled);
   if ($$props.showPasteHint === void 0 && $$bindings.showPasteHint && showPasteHint !== void 0)
     $$bindings.showPasteHint(showPasteHint);
-  $$result.css.add(css$4);
-  currentInputState = $inputState;
-  dragActive = currentInputState.isDragActive;
-  pasteSupported = currentInputState.isClipboardReady;
-  $$unsubscribe_inputStatus();
-  $$unsubscribe_inputState();
+  $$result.css.add(css$5);
   return `  <div class="unified-input-container svelte-1yokvc6"> <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/bmp,image/tiff" class="hidden" ${disabled ? "disabled" : ""}>  ${validate_component(Dropzone, "Dropzone").$$render(
     $$result,
     {
@@ -370,23 +151,20 @@ const UnifiedInput = create_ssr_component(($$result, $$props, $$bindings, slots)
       multiple: false,
       disableDefaultStyles: true,
       containerClasses: "dropzone-container",
-      disabled: disabled || !currentInputState.canAcceptInput,
+      disabled,
       noClick: true
     },
     {},
     {
       default: () => {
         return `<div class="${[
-          "dropzone " + escape(dragActive ? "dropzone-active" : "", true) + " " + escape(
+          "dropzone " + escape("", true) + " " + escape(
             disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
             true
           ) + " svelte-1yokvc6",
-          dragActive ? "animate-pulse-glow" : ""
+          ""
         ].join(" ").trim()}"> <div class="character-guide absolute inset-0 pointer-events-none opacity-20 svelte-1yokvc6"></div>  <div class="flex flex-col items-center justify-center space-y-6 relative z-10"> <div class="w-24 h-24 rounded-full bg-magic-400/10 flex items-center justify-center" data-svelte-h="svelte-zpjsso"><svg class="w-12 h-12 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg></div>  <div class="text-center" data-svelte-h="svelte-1noa2ng"><h2 class="text-2xl font-semibold text-magic-gradient mb-2">Place Character Here</h2> <p class="text-dark-text-secondary text-lg">Watch backgrounds disappear like magic</p></div>  <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md"> <button class="btn btn-magic flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200" ${disabled ? "disabled" : ""}><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            Choose Image</button>  ${pasteSupported ? `<button class="btn btn-outline border-magic-400 text-magic-400 hover:bg-magic-400 hover:text-white flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200" ${disabled ? "disabled" : ""}><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-              Paste</button>` : ``}</div>  <div class="text-center text-sm text-dark-text-muted space-y-1"><p>${`Drag &amp; drop,`}
-            choose file${pasteSupported && showPasteHint ? `, or 
-              <kbd class="kbd kbd-xs bg-dark-elevated text-magic-400 svelte-1yokvc6" data-svelte-h="svelte-s3feji">⌘</kbd> <kbd class="kbd kbd-xs bg-dark-elevated text-magic-400 svelte-1yokvc6" data-svelte-h="svelte-1qj8pkc">V</kbd>` : ``}</p> <p class="opacity-75" data-svelte-h="svelte-oom6db">Supports JPEG, PNG, WebP • Max 10MB • Up to 4K resolution</p>  ${``}</div></div>  ${dragActive ? `<div class="absolute inset-0 bg-magic-400/20 border-2 border-magic-400 rounded-lg flex items-center justify-center z-20" data-svelte-h="svelte-1rgb4wq"><div class="text-center"><div class="w-16 h-16 mx-auto mb-4 rounded-full bg-magic-400/20 flex items-center justify-center"><svg class="w-8 h-8 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></div> <p class="text-xl font-semibold text-magic-400">Drop to process</p> <p class="text-magic-300">Release to start the magic</p></div></div>` : ``}</div>`;
+            Choose Image</button>  ${``}</div>  <div class="text-center text-sm text-dark-text-muted space-y-1"><p>Drag &amp; drop, choose file${``}</p> <p class="opacity-75" data-svelte-h="svelte-oom6db">Supports JPEG, PNG, WebP • Max 10MB • Up to 4K resolution</p></div></div>  ${``}</div>`;
       }
     }
   )} </div>`;
@@ -603,6 +381,23 @@ class AnalyticsService {
     });
   }
   /**
+   * Track batch processing completion
+   */
+  async trackBatchCompletion(successfulCount, totalImages) {
+    const success = successfulCount > 0;
+    const completionRate = totalImages > 0 ? successfulCount / totalImages * 100 : 0;
+    this.sessionMetrics.images_processed += totalImages;
+    this.sessionMetrics.successful_completions += successfulCount;
+    this.sessionMetrics.failed_attempts += totalImages - successfulCount;
+    await this.trackEvent("batch_completion", {
+      successful_count: successfulCount,
+      total_images: totalImages,
+      completion_rate: completionRate,
+      success,
+      batch_size: totalImages
+    });
+  }
+  /**
    * Track session continuity (KPI requirement: 2+ images per session)
    */
   async trackSessionContinuity() {
@@ -712,7 +507,7 @@ if (typeof window !== "undefined") {
   });
 }
 const NPSSurvey_svelte_svelte_type_style_lang = "";
-const css$3 = {
+const css$4 = {
   code: ".nps-survey.svelte-gf0zay.svelte-gf0zay{backdrop-filter:blur(10px);box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.25),\n      0 0 0 1px rgba(255, 255, 255, 0.05)}.score-button.svelte-gf0zay.svelte-gf0zay{transition:all 0.2s ease}.score-button.selected.svelte-gf0zay.svelte-gf0zay{transform:scale(1.1);box-shadow:0 4px 8px rgba(0, 255, 136, 0.3)}.score-button.hover-effect.svelte-gf0zay.svelte-gf0zay:hover{transform:scale(1.05)}.nps-survey.svelte-gf0zay .svelte-gf0zay{transition:all 0.2s ease}@media(max-width: 640px){.nps-survey.svelte-gf0zay.svelte-gf0zay{bottom:1rem;right:1rem;left:1rem;max-width:none}.grid.grid-cols-11.svelte-gf0zay.svelte-gf0zay{grid-template-columns:repeat(11, minmax(0, 1fr));gap:0.25rem}.score-button.svelte-gf0zay.svelte-gf0zay{width:1.75rem;height:1.75rem;font-size:0.75rem}}@media(prefers-reduced-motion: reduce){.nps-survey.svelte-gf0zay.svelte-gf0zay,.score-button.svelte-gf0zay.svelte-gf0zay{transition:none;animation:none}.score-button.selected.svelte-gf0zay.svelte-gf0zay{transform:none}.score-button.hover-effect.svelte-gf0zay.svelte-gf0zay:hover{transform:none}}",
   map: null
 };
@@ -734,7 +529,7 @@ const NPSSurvey = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     $$bindings.imagesProcessed(imagesProcessed);
   if ($$props.autoShowDelay === void 0 && $$bindings.autoShowDelay && autoShowDelay !== void 0)
     $$bindings.autoShowDelay(autoShowDelay);
-  $$result.css.add(css$3);
+  $$result.css.add(css$4);
   {
     if (visible) {
       slideIn.set(1);
@@ -750,7 +545,7 @@ const NPSSurvey = create_ssr_component(($$result, $$props, $$bindings, slots) =>
   })}</div>  <div class="flex justify-between text-xs text-dark-text-muted svelte-gf0zay" data-svelte-h="svelte-qpw09z"><span class="svelte-gf0zay">Not likely</span> <span class="svelte-gf0zay">Very likely</span></div></div></div>  ${``}  ${``}</div>`}</div>` : ``}`;
 });
 const FeedbackCollection_svelte_svelte_type_style_lang = "";
-const css$2 = {
+const css$3 = {
   code: ".feedback-modal.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu{backdrop-filter:blur(10px);box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.4),\n      0 0 0 1px rgba(255, 255, 255, 0.05)}.feedback-type-option.svelte-1adc9lu input.svelte-1adc9lu:checked+.feedback-type-card.svelte-1adc9lu{border-color:rgba(0, 255, 136, 0.6);background-color:rgba(0, 255, 136, 0.1)}.feedback-type-card.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu{transition:all 0.2s ease}.feedback-type-card.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu:hover{transform:translateY(-1px)}textarea.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu{min-height:120px}@media(max-width: 640px){.feedback-modal.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu{margin:1rem;max-height:calc(100vh - 2rem)}}@media(prefers-reduced-motion: reduce){.feedback-type-card.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu,.feedback-modal.svelte-1adc9lu .svelte-1adc9lu.svelte-1adc9lu{transition:none;animation:none}.feedback-type-card.svelte-1adc9lu.svelte-1adc9lu.svelte-1adc9lu:hover{transform:none}}",
   map: null
 };
@@ -803,7 +598,7 @@ const FeedbackCollection = create_ssr_component(($$result, $$props, $$bindings, 
     $$bindings.feedbackType(feedbackType);
   if ($$props.contextData === void 0 && $$bindings.contextData && contextData !== void 0)
     $$bindings.contextData(contextData);
-  $$result.css.add(css$2);
+  $$result.css.add(css$3);
   characterCount = feedbackContent.length;
   isValidFeedback = feedbackContent.trim().length >= 10;
   currentTypeInfo = feedbackTypes[selectedType];
@@ -814,7 +609,7 @@ const FeedbackCollection = create_ssr_component(($$result, $$props, $$bindings, 
                 Submit Feedback`}</button> <button class="px-6 py-3 text-dark-text-muted hover:text-dark-text transition-colors font-medium svelte-1adc9lu" data-svelte-h="svelte-1ibbsx6">Cancel</button></div></div>`}</div></div>` : ``}`;
 });
 const AnalyticsDashboard_svelte_svelte_type_style_lang = "";
-const css$1 = {
+const css$2 = {
   code: ".analytics-dashboard.svelte-1dl4xtl.svelte-1dl4xtl{backdrop-filter:blur(10px);box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.4),\n      0 0 0 1px rgba(255, 255, 255, 0.05)}.metric-card.svelte-1dl4xtl.svelte-1dl4xtl,.kpi-card.svelte-1dl4xtl.svelte-1dl4xtl,.insights-card.svelte-1dl4xtl.svelte-1dl4xtl{transition:all 0.2s ease}.metric-card.svelte-1dl4xtl.svelte-1dl4xtl:hover,.kpi-card.svelte-1dl4xtl.svelte-1dl4xtl:hover,.insights-card.svelte-1dl4xtl.svelte-1dl4xtl:hover{transform:translateY(-1px);border-color:rgba(0, 255, 136, 0.3)}.progress-bar.svelte-1dl4xtl.svelte-1dl4xtl{overflow:hidden}@media(max-width: 768px){.analytics-dashboard.svelte-1dl4xtl.svelte-1dl4xtl{margin:1rem;max-height:calc(100vh - 2rem)}.grid.grid-cols-2.md\\\\.svelte-1dl4xtl.svelte-1dl4xtl:grid-cols-4{grid-template-columns:1fr 1fr}.grid.grid-cols-1.md\\\\:grid-cols-2.lg\\\\.svelte-1dl4xtl.svelte-1dl4xtl:grid-cols-3{grid-template-columns:1fr}}@media(prefers-reduced-motion: reduce){.metric-card.svelte-1dl4xtl.svelte-1dl4xtl,.kpi-card.svelte-1dl4xtl.svelte-1dl4xtl,.insights-card.svelte-1dl4xtl.svelte-1dl4xtl{transition:none}.metric-card.svelte-1dl4xtl.svelte-1dl4xtl:hover,.kpi-card.svelte-1dl4xtl.svelte-1dl4xtl:hover,.insights-card.svelte-1dl4xtl.svelte-1dl4xtl:hover{transform:none}.progress-bar.svelte-1dl4xtl div.svelte-1dl4xtl{transition:none}}",
   map: null
 };
@@ -868,7 +663,7 @@ const AnalyticsDashboard = create_ssr_component(($$result, $$props, $$bindings, 
     $$bindings.visible(visible);
   if ($$props.isDevMode === void 0 && $$bindings.isDevMode && isDevMode !== void 0)
     $$bindings.isDevMode(isDevMode);
-  $$result.css.add(css$1);
+  $$result.css.add(css$2);
   taskCompletionRate = 0;
   sessionContinuityRate = 0;
   averageNPS = analyticsData.npsResponses.length > 0 ? analyticsData.npsResponses.reduce((sum, score) => sum + score, 0) / analyticsData.npsResponses.length : 0;
@@ -888,6 +683,246 @@ const AnalyticsDashboard = create_ssr_component(($$result, $$props, $$bindings, 
   }) : `<div class="text-sm text-dark-text-muted" data-svelte-h="svelte-b9oudv">No error data (good!)</div>`}</div></div></div></div></div></div>` : ``}`;
 });
 const ModelSelector_svelte_svelte_type_style_lang = "";
+const ImageRefinementEditor_svelte_svelte_type_style_lang = "";
+const BatchProcessor_svelte_svelte_type_style_lang = "";
+const css$1 = {
+  code: ".batch-overlay.svelte-8o0g4x{position:fixed;inset:0;background:rgba(0, 0, 0, 0.9);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}.batch-container.svelte-8o0g4x{background:linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(38, 38, 38, 0.9) 100%);border:1px solid rgba(0, 255, 136, 0.2);border-radius:12px;max-width:90vw;max-height:90vh;width:900px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.4)}.batch-header.svelte-8o0g4x{padding:20px 24px 16px;border-bottom:1px solid rgba(255, 255, 255, 0.1);position:relative}.close-button.svelte-8o0g4x{position:absolute;top:16px;right:20px;background:transparent;border:none;color:#666;cursor:pointer;padding:4px;transition:color 0.2s}.close-button.svelte-8o0g4x:hover{color:#fff}.drop-zone.svelte-8o0g4x{margin:20px;padding:60px 20px;border:2px dashed rgba(0, 255, 136, 0.3);border-radius:12px;text-align:center;transition:all 0.3s ease;cursor:pointer}.drop-zone.svelte-8o0g4x:hover,.drop-zone.drag-active.svelte-8o0g4x{border-color:rgba(0, 255, 136, 0.6);background:rgba(0, 255, 136, 0.05)}.drop-zone-content.svelte-8o0g4x{display:flex;flex-direction:column;align-items:center}.file-list-container.svelte-8o0g4x{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:20px}.file-list-header.svelte-8o0g4x{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.file-list-actions.svelte-8o0g4x{display:flex;gap:8px}.file-list.svelte-8o0g4x{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;max-height:400px}.file-item.svelte-8o0g4x{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255, 255, 255, 0.05);border:1px solid rgba(255, 255, 255, 0.1);border-radius:8px;transition:all 0.2s}.file-item.svelte-8o0g4x:hover{background:rgba(255, 255, 255, 0.08);border-color:rgba(0, 255, 136, 0.3)}.file-preview.svelte-8o0g4x{width:60px;height:60px;border-radius:6px;overflow:hidden;flex-shrink:0}.preview-image.svelte-8o0g4x{width:100%;height:100%;object-fit:cover}.file-info.svelte-8o0g4x{flex:1;min-width:0}.file-name.svelte-8o0g4x{font-weight:500;color:#fff;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-size.svelte-8o0g4x{font-size:12px;color:#999;margin-bottom:4px}.file-status.svelte-8o0g4x{font-size:12px;display:flex;align-items:center;gap:4px}.file-status.status-pending.svelte-8o0g4x{color:#ccc}.file-status.status-processing.svelte-8o0g4x{color:#00ff88}.file-status.status-completed.svelte-8o0g4x{color:#00ff88}.file-status.status-failed.svelte-8o0g4x{color:#ff4444}.processing-indicator.svelte-8o0g4x{display:flex;align-items:center;gap:4px}.spinner.svelte-8o0g4x{width:12px;height:12px;border:2px solid rgba(0, 255, 136, 0.3);border-top:2px solid #00ff88;border-radius:50%;animation:svelte-8o0g4x-spin 1s linear infinite}@keyframes svelte-8o0g4x-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.file-error.svelte-8o0g4x{font-size:11px;color:#ff4444;margin-top:2px}.file-actions.svelte-8o0g4x{display:flex;gap:8px;flex-shrink:0}.processing-controls.svelte-8o0g4x{padding:20px;border-top:1px solid rgba(255, 255, 255, 0.1);text-align:center}.processing-status.svelte-8o0g4x{display:flex;flex-direction:column;align-items:center;gap:12px}.processing-progress.svelte-8o0g4x{width:100%;max-width:400px}.progress-bar.svelte-8o0g4x{width:100%;height:8px;background:rgba(255, 255, 255, 0.1);border-radius:4px;overflow:hidden;margin-bottom:8px}.progress-fill.svelte-8o0g4x{height:100%;background:linear-gradient(90deg, #00ff88, #00d4aa);transition:width 0.3s ease}.progress-text.svelte-8o0g4x{color:#00ff88;font-size:14px}.batch-results.svelte-8o0g4x{display:flex;flex-direction:column;align-items:center;gap:16px}.results-summary.svelte-8o0g4x{text-align:center}.results-actions.svelte-8o0g4x{display:flex;gap:12px}.hidden.svelte-8o0g4x{display:none}@media(max-width: 768px){.batch-container.svelte-8o0g4x{width:100%;max-width:100vw;max-height:100vh;border-radius:0}.file-item.svelte-8o0g4x{flex-direction:column;align-items:flex-start;gap:8px}.file-actions.svelte-8o0g4x{align-self:flex-end}.results-actions.svelte-8o0g4x{flex-direction:column;width:100%}}",
+  map: null
+};
+const BatchProcessor = create_ssr_component(($$result, $$props, $$bindings, slots) => {
+  let { isVisible = false } = $$props;
+  let { maxFiles = 10 } = $$props;
+  createEventDispatcher();
+  let selectedFiles = [];
+  let imagePreviewUrls = [];
+  let fileStatuses = [];
+  if ($$props.isVisible === void 0 && $$bindings.isVisible && isVisible !== void 0)
+    $$bindings.isVisible(isVisible);
+  if ($$props.maxFiles === void 0 && $$bindings.maxFiles && maxFiles !== void 0)
+    $$bindings.maxFiles(maxFiles);
+  $$result.css.add(css$1);
+  return `  ${isVisible ? `<div class="batch-overlay svelte-8o0g4x"><div class="batch-container svelte-8o0g4x"> <div class="batch-header svelte-8o0g4x"><h3 class="text-xl font-semibold text-magic-gradient" data-svelte-h="svelte-fvixf7">Batch Processing</h3> <p class="text-sm text-dark-text-secondary mt-1">Process multiple images simultaneously (max ${escape(maxFiles)} files)</p> <button class="close-button svelte-8o0g4x" aria-label="Close batch processor" data-svelte-h="svelte-1x1er5t"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>  ${selectedFiles.length === 0 ? `<div class="${"drop-zone " + escape("", true) + " svelte-8o0g4x"}"><div class="drop-zone-content svelte-8o0g4x"><svg class="w-12 h-12 text-magic-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg> <h4 class="text-lg font-semibold text-dark-text mb-2" data-svelte-h="svelte-7cq59c">Drop images here or click to select</h4> <p class="text-sm text-dark-text-secondary mb-4">Support for JPG, PNG, WebP • Max 10MB per file • Up to ${escape(maxFiles)} files</p> <button class="btn btn-magic" ${""}><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+              Select Files</button></div> <input type="file" multiple accept="image/*" class="hidden svelte-8o0g4x"></div>` : ``}  ${selectedFiles.length > 0 ? `<div class="file-list-container svelte-8o0g4x"><div class="file-list-header svelte-8o0g4x"><h4 class="text-lg font-semibold text-dark-text">Selected Files (${escape(selectedFiles.length)}/${escape(maxFiles)})</h4> <div class="file-list-actions svelte-8o0g4x"><button class="btn btn-outline btn-sm" ${selectedFiles.length >= maxFiles ? "disabled" : ""}>Add More</button> <button class="btn btn-outline btn-sm" ${""}>Clear All</button></div></div> <div class="file-list svelte-8o0g4x">${each(selectedFiles, (file, index) => {
+    return `<div class="file-item svelte-8o0g4x"><div class="file-preview svelte-8o0g4x"><img${add_attribute("src", imagePreviewUrls[index], 0)}${add_attribute("alt", file.name, 0)} class="preview-image svelte-8o0g4x"></div> <div class="file-info svelte-8o0g4x"><div class="file-name svelte-8o0g4x">${escape(file.name)}</div> <div class="file-size svelte-8o0g4x">${escape((file.size / (1024 * 1024)).toFixed(2))} MB</div>  ${fileStatuses[index] ? `<div class="${"file-status status-" + escape(fileStatuses[index].status, true) + " svelte-8o0g4x"}">${fileStatuses[index].status === "pending" ? `<span data-svelte-h="svelte-1cs9spj">Ready</span>` : `${fileStatuses[index].status === "processing" ? `<div class="processing-indicator svelte-8o0g4x" data-svelte-h="svelte-jkqr7"><div class="spinner svelte-8o0g4x"></div> <span>Processing...</span> </div>` : `${fileStatuses[index].status === "completed" ? `<span class="text-green-400" data-svelte-h="svelte-1hum4cp">✓ Completed</span>` : `${fileStatuses[index].status === "failed" ? `<span class="text-red-400" data-svelte-h="svelte-hchxnj">✗ Failed</span>` : ``}`}`}`}</div> ${fileStatuses[index].error ? `<div class="file-error svelte-8o0g4x">${escape(fileStatuses[index].error)}</div>` : ``}` : ``}</div> <div class="file-actions svelte-8o0g4x">${fileStatuses[index]?.status === "completed" && fileStatuses[index].downloadUrl ? `<button class="btn btn-sm btn-magic" title="Download processed image" data-svelte-h="svelte-wys4yr"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4"></path></svg> </button>` : ``} <button class="btn btn-sm btn-outline border-red-500 text-red-400 hover:bg-red-500 hover:text-white" ${""} title="Remove file"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> </button></div> </div>`;
+  })}</div> <input type="file" multiple accept="image/*" class="hidden svelte-8o0g4x"></div>  <div class="processing-controls svelte-8o0g4x">${`<button class="btn btn-magic btn-lg" ${selectedFiles.length === 0 ? "disabled" : ""}><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Process ${escape(selectedFiles.length)} Image${escape(selectedFiles.length > 1 ? "s" : "")}</button>`}</div>` : ``}</div></div>` : ``}`;
+});
+const inputState = writable({
+  currentState: "idle",
+  inputMethod: "none",
+  isDragActive: false,
+  isClipboardReady: false,
+  errorMessage: null,
+  successMessage: null,
+  canAcceptInput: true,
+  showPasteHint: true
+});
+derived(inputState, ($state) => ({
+  isIdle: $state.currentState === "idle",
+  isActive: $state.currentState === "active" || $state.isDragActive,
+  isProcessing: $state.currentState === "processing",
+  hasError: $state.currentState === "error",
+  hasSuccess: $state.currentState === "success",
+  showDropZone: $state.canAcceptInput && ["idle", "hover", "active"].includes($state.currentState)
+}));
+const inputAnalytics = writable({
+  dragEvents: 0,
+  pasteEvents: 0,
+  uploadEvents: 0,
+  successfulInputs: 0,
+  failedInputs: 0,
+  averageInputTime: 0
+});
+const validTransitions = [
+  // From idle
+  { from: "idle", to: "hover", trigger: "DRAG_ENTER" },
+  { from: "idle", to: "active", trigger: "PASTE_READY", method: "paste" },
+  { from: "idle", to: "active", trigger: "UPLOAD_CLICK", method: "upload" },
+  { from: "idle", to: "processing", trigger: "FILE_SELECTED" },
+  // From hover
+  { from: "hover", to: "idle", trigger: "DRAG_LEAVE" },
+  { from: "hover", to: "active", trigger: "DRAG_OVER" },
+  { from: "hover", to: "hover", trigger: "DRAG_ENTER" },
+  // Stay in hover on repeated drag enter
+  { from: "hover", to: "processing", trigger: "DROP", method: "drop" },
+  // From active
+  { from: "active", to: "idle", trigger: "CANCEL" },
+  { from: "active", to: "processing", trigger: "FILE_SELECTED" },
+  { from: "active", to: "processing", trigger: "DROP", method: "drop" },
+  { from: "active", to: "active", trigger: "DRAG_OVER" },
+  // Stay active on repeated drag over
+  { from: "active", to: "hover", trigger: "DRAG_LEAVE" },
+  { from: "active", to: "success", trigger: "PROCESS_COMPLETE" },
+  // Direct success from active
+  { from: "active", to: "error", trigger: "PROCESS_ERROR" },
+  // Direct error from active
+  // From processing
+  { from: "processing", to: "success", trigger: "PROCESS_COMPLETE" },
+  { from: "processing", to: "error", trigger: "PROCESS_ERROR" },
+  // From success
+  { from: "success", to: "idle", trigger: "RESET" },
+  { from: "success", to: "processing", trigger: "PROCESS_ANOTHER" },
+  // From error
+  { from: "error", to: "idle", trigger: "RESET" },
+  { from: "error", to: "processing", trigger: "RETRY" }
+];
+const inputActions = {
+  // Core state transitions
+  transition(trigger, method, data) {
+    inputState.update((current) => {
+      const validTransition = validTransitions.find(
+        (t) => t.from === current.currentState && t.trigger === trigger
+      );
+      if (!validTransition) {
+        console.warn(`Invalid transition: ${current.currentState} -> ${trigger}`);
+        return current;
+      }
+      const newState = {
+        ...current,
+        currentState: validTransition.to,
+        inputMethod: validTransition.method || method || current.inputMethod,
+        errorMessage: validTransition.to !== "error" ? null : current.errorMessage,
+        successMessage: validTransition.to !== "success" ? null : current.successMessage,
+        ...data
+      };
+      console.log(`Input state: ${current.currentState} -> ${newState.currentState} (${trigger})`);
+      return newState;
+    });
+  },
+  // Drag and drop actions
+  dragEnter() {
+    inputActions.transition("DRAG_ENTER");
+    inputState.update((state) => ({ ...state, isDragActive: true }));
+  },
+  dragLeave() {
+    inputActions.transition("DRAG_LEAVE");
+    inputState.update((state) => ({ ...state, isDragActive: false }));
+  },
+  dragOver() {
+    inputActions.transition("DRAG_OVER");
+  },
+  drop(files) {
+    if (files.length === 0)
+      return;
+    inputActions.transition("DROP", "drop");
+    inputState.update((state) => ({
+      ...state,
+      isDragActive: false,
+      canAcceptInput: false
+    }));
+    inputAnalytics.update((analytics) => ({
+      ...analytics,
+      dragEvents: analytics.dragEvents + 1
+    }));
+  },
+  // Clipboard actions
+  pasteReady() {
+    inputActions.transition("PASTE_READY", "paste");
+  },
+  paste() {
+    inputActions.transition("FILE_SELECTED", "paste");
+    inputState.update((state) => ({ ...state, canAcceptInput: false }));
+    inputAnalytics.update((analytics) => ({
+      ...analytics,
+      pasteEvents: analytics.pasteEvents + 1
+    }));
+  },
+  // Upload actions
+  uploadClick() {
+    inputActions.transition("UPLOAD_CLICK", "upload");
+  },
+  uploadSelected(file) {
+    inputActions.transition("FILE_SELECTED", "upload");
+    inputState.update((state) => ({ ...state, canAcceptInput: false }));
+    inputAnalytics.update((analytics) => ({
+      ...analytics,
+      uploadEvents: analytics.uploadEvents + 1
+    }));
+  },
+  // Processing actions
+  startProcessing() {
+    inputActions.transition("FILE_SELECTED");
+  },
+  completeProcessing(successMessage = "Processing complete!") {
+    inputActions.transition("PROCESS_COMPLETE");
+    inputState.update((state) => ({
+      ...state,
+      successMessage,
+      canAcceptInput: true
+    }));
+    inputAnalytics.update((analytics) => ({
+      ...analytics,
+      successfulInputs: analytics.successfulInputs + 1
+    }));
+  },
+  errorProcessing(errorMessage) {
+    inputActions.transition("PROCESS_ERROR");
+    inputState.update((state) => ({
+      ...state,
+      errorMessage,
+      canAcceptInput: true
+    }));
+    inputAnalytics.update((analytics) => ({
+      ...analytics,
+      failedInputs: analytics.failedInputs + 1
+    }));
+  },
+  // Reset actions
+  reset() {
+    inputActions.transition("RESET");
+    inputState.update((state) => ({
+      ...state,
+      inputMethod: "none",
+      isDragActive: false,
+      errorMessage: null,
+      successMessage: null,
+      canAcceptInput: true
+    }));
+  },
+  processAnother() {
+    inputActions.transition("PROCESS_ANOTHER");
+    inputState.update((state) => ({
+      ...state,
+      inputMethod: "none",
+      isDragActive: false,
+      errorMessage: null,
+      successMessage: null,
+      canAcceptInput: true
+    }));
+  },
+  retry() {
+    inputActions.transition("RETRY");
+    inputState.update((state) => ({
+      ...state,
+      errorMessage: null,
+      canAcceptInput: true
+    }));
+  },
+  // Clipboard readiness detection
+  setClipboardReady(ready) {
+    inputState.update((state) => ({
+      ...state,
+      isClipboardReady: ready,
+      showPasteHint: ready
+    }));
+  },
+  // Validation and error handling
+  validateInput(file) {
+    const maxSize = 10 * 1024 * 1024;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/bmp", "image/tiff"];
+    if (file.size > maxSize) {
+      return { valid: false, error: "File size too large (max 10MB)" };
+    }
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      return { valid: false, error: "Unsupported file type" };
+    }
+    return { valid: true };
+  }
+};
+if (typeof window !== "undefined") {
+  const clipboardSupported = !!(navigator.clipboard && navigator.clipboard.read);
+  inputActions.setClipboardReady(clipboardSupported);
+}
 const sessionContinuity = writable({
   sessionId: generateSessionId(),
   startTime: Date.now(),
@@ -1111,7 +1146,7 @@ if (typeof window !== "undefined") {
 }
 const _page_svelte_svelte_type_style_lang = "";
 const css = {
-  code: ".page-container.svelte-au32od{min-height:calc(100vh - 140px)}.hero.svelte-au32od{background:radial-gradient(ellipse at top, rgba(0, 255, 136, 0.1) 0%, transparent 50%),\n      radial-gradient(ellipse at bottom, rgba(0, 136, 255, 0.05) 0%, transparent 50%)}.processing-container.svelte-au32od{position:relative;width:100%;max-width:600px;margin:0 auto;min-height:400px;background:linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(38, 38, 38, 0.9) 100%);border:1px solid rgba(0, 255, 136, 0.2);border-radius:12px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.4),\n      0 0 0 1px rgba(255, 255, 255, 0.05)}.success-card.svelte-au32od,.feature-card.svelte-au32od{border:1px solid rgba(56, 189, 248, 0.2);transition:all 0.3s ease}.success-card.svelte-au32od:hover,.feature-card.svelte-au32od:hover{border-color:rgba(56, 189, 248, 0.4);transform:translateY(-2px)}.success-card.svelte-au32od{animation:svelte-au32od-slideUp 0.5s ease-out}@keyframes svelte-au32od-slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes svelte-au32od-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}.processing-container.svelte-au32od::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 40%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),\n      radial-gradient(circle at 70% 60%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);pointer-events:none;z-index:1}",
+  code: ".page-container.svelte-1blw2di{min-height:calc(100vh - 140px)}.hero.svelte-1blw2di{background:radial-gradient(ellipse at top, rgba(0, 255, 136, 0.1) 0%, transparent 50%),\r\n      radial-gradient(ellipse at bottom, rgba(0, 136, 255, 0.05) 0%, transparent 50%)}.processing-container.svelte-1blw2di{position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:min(900px, 90vw);min-height:min(400px, 60vh);background:linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(38, 38, 38, 0.9) 100%);border:1px solid rgba(0, 255, 136, 0.2);border-radius:12px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.4),\r\n      0 0 0 1px rgba(255, 255, 255, 0.05);display:flex;align-items:center;justify-content:center;box-sizing:border-box}.success-card.svelte-1blw2di,.feature-card.svelte-1blw2di{border:1px solid rgba(56, 189, 248, 0.2);transition:all 0.3s ease}.success-card.svelte-1blw2di:hover,.feature-card.svelte-1blw2di:hover{border-color:rgba(56, 189, 248, 0.4);transform:translateY(-2px)}.success-card.svelte-1blw2di{animation:svelte-1blw2di-slideUp 0.5s ease-out}@keyframes svelte-1blw2di-slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes svelte-1blw2di-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}.processing-section.svelte-1blw2di{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0, 0, 0, 0.8);backdrop-filter:blur(4px);z-index:1000}@media(max-width: 768px){.processing-container.svelte-1blw2di{width:min(95vw, 600px);min-height:min(350px, 50vh)}}@media(max-width: 480px){.processing-container.svelte-1blw2di{width:min(calc(100vw - 24px), 400px);min-height:min(300px, 45vh)}}.processing-container.svelte-1blw2di::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 40%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),\r\n      radial-gradient(circle at 70% 60%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);pointer-events:none;z-index:1}",
   map: null
 };
 const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
@@ -1123,13 +1158,15 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let showNPSSurvey = false;
   let showFeedbackCollection = false;
   let showAnalyticsDashboard = false;
+  let showBatchProcessor = false;
   $$result.css.add(css);
   $appState.currentImage;
   $appState.processingState.status;
   $$unsubscribe_continuityStatus();
   $$unsubscribe_appState();
-  return `  ${$$result.head += `<!-- HEAD_svelte-thm2db_START -->${$$result.title = `<title>CharacterCut - Transform Your Characters with Magic</title>`, ""}<meta name="description" content="Remove backgrounds from AI-generated characters instantly. Drag, drop, or paste - watch backgrounds disappear like magic."><!-- HEAD_svelte-thm2db_END -->`, ""} <div class="page-container svelte-au32od"> <section class="hero py-12 sm:py-20 svelte-au32od" data-svelte-h="svelte-1h6iamq"><div class="container text-center"> <div class="mb-8"><h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4"><span class="text-magic-gradient">Transform Characters</span> <br> <span class="text-dark-text">with Magic</span></h1> <p class="text-xl sm:text-2xl text-dark-text-secondary max-w-2xl mx-auto leading-relaxed">Watch backgrounds disappear effortlessly. Perfect for 
-          <span class="text-magic-400 font-medium">AI-generated character assets</span>.</p></div>  <div class="flex items-center justify-center space-x-2 mb-12 text-dark-text-muted"><svg class="w-5 h-5 text-magic-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg> <span class="text-sm">Average processing time: &lt;5 seconds</span></div></div></section>  <section class="interface py-8"><div class="container">${` <div class="max-w-2xl mx-auto">${validate_component(UnifiedInput, "UnifiedInput").$$render($$result, { disabled: processing }, {}, {})}</div>`} ${``} ${``} ${``} ${``}</div></section>  ${`<section class="features py-16 sm:py-24" data-svelte-h="svelte-6b4rhs"><div class="container"><div class="text-center mb-12"><h2 class="text-3xl font-bold text-dark-text mb-4">Built for Developer Workflow</h2> <p class="text-lg text-dark-text-secondary max-w-2xl mx-auto">Designed for speed and efficiency. Get back to building faster.</p></div> <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"> <div class="feature-card glass-card rounded-xl p-6 text-center svelte-au32od"><div class="w-12 h-12 mx-auto mb-4 rounded-lg bg-magic-400/20 flex items-center justify-center"><svg class="w-6 h-6 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div> <h3 class="text-lg font-semibold text-dark-text mb-2">Lightning Fast</h3> <p class="text-sm text-dark-text-secondary">Average processing under 5 seconds. Keep your momentum going.</p></div>  <div class="feature-card glass-card rounded-xl p-6 text-center svelte-au32od"><div class="w-12 h-12 mx-auto mb-4 rounded-lg bg-magic-400/20 flex items-center justify-center"><svg class="w-6 h-6 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div> <h3 class="text-lg font-semibold text-dark-text mb-2">Seamless Paste</h3> <p class="text-sm text-dark-text-secondary">Cmd+V from any AI generator. Results auto-copy to clipboard.</p></div>  <div class="feature-card glass-card rounded-xl p-6 text-center svelte-au32od"><div class="w-12 h-12 mx-auto mb-4 rounded-lg bg-magic-400/20 flex items-center justify-center"><svg class="w-6 h-6 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div> <h3 class="text-lg font-semibold text-dark-text mb-2">Privacy First</h3> <p class="text-sm text-dark-text-secondary">Images auto-delete after 1 hour. No tracking, no accounts needed.</p></div></div></div></section>`}</div>   ${validate_component(NPSSurvey, "NPSSurvey").$$render(
+  return `  ${$$result.head += `<!-- HEAD_svelte-thm2db_START -->${$$result.title = `<title>CharacterCut - Transform Your Characters with Magic</title>`, ""}<meta name="description" content="Remove backgrounds from AI-generated characters instantly. Drag, drop, or paste - watch backgrounds disappear like magic."><!-- HEAD_svelte-thm2db_END -->`, ""} <div class="page-container svelte-1blw2di"> <section class="hero py-12 sm:py-20 svelte-1blw2di" data-svelte-h="svelte-1h6iamq"><div class="container text-center"> <div class="mb-8"><h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4"><span class="text-magic-gradient">Transform Characters</span> <br> <span class="text-dark-text">with Magic</span></h1> <p class="text-xl sm:text-2xl text-dark-text-secondary max-w-2xl mx-auto leading-relaxed">Watch backgrounds disappear effortlessly. Perfect for 
+          <span class="text-magic-400 font-medium">AI-generated character assets</span>.</p></div>  <div class="flex items-center justify-center space-x-2 mb-12 text-dark-text-muted"><svg class="w-5 h-5 text-magic-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg> <span class="text-sm">Average processing time: &lt;5 seconds</span></div></div></section>  <section class="interface py-8"><div class="container">${` <div class="max-w-2xl mx-auto">${validate_component(UnifiedInput, "UnifiedInput").$$render($$result, { disabled: processing }, {}, {})}  <div class="text-center batch-button-container mt-6"><button class="btn btn-outline border-magic-400 text-magic-400 hover:bg-magic-400 hover:text-white py-2 px-4 rounded-lg font-medium text-sm" data-svelte-h="svelte-1tvqvdp"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              Process Multiple Images</button></div></div>`} ${``} ${``} ${``}</div></section>  ${``}  ${`<section class="features py-16 sm:py-24" data-svelte-h="svelte-6b4rhs"><div class="container"><div class="text-center mb-12"><h2 class="text-3xl font-bold text-dark-text mb-4">Built for Developer Workflow</h2> <p class="text-lg text-dark-text-secondary max-w-2xl mx-auto">Designed for speed and efficiency. Get back to building faster.</p></div> <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"> <div class="feature-card glass-card rounded-xl p-6 text-center svelte-1blw2di"><div class="w-12 h-12 mx-auto mb-4 rounded-lg bg-magic-400/20 flex items-center justify-center"><svg class="w-6 h-6 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div> <h3 class="text-lg font-semibold text-dark-text mb-2">Lightning Fast</h3> <p class="text-sm text-dark-text-secondary">Average processing under 5 seconds. Keep your momentum going.</p></div>  <div class="feature-card glass-card rounded-xl p-6 text-center svelte-1blw2di"><div class="w-12 h-12 mx-auto mb-4 rounded-lg bg-magic-400/20 flex items-center justify-center"><svg class="w-6 h-6 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div> <h3 class="text-lg font-semibold text-dark-text mb-2">Seamless Paste</h3> <p class="text-sm text-dark-text-secondary">Cmd+V from any AI generator. Results auto-copy to clipboard.</p></div>  <div class="feature-card glass-card rounded-xl p-6 text-center svelte-1blw2di"><div class="w-12 h-12 mx-auto mb-4 rounded-lg bg-magic-400/20 flex items-center justify-center"><svg class="w-6 h-6 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div> <h3 class="text-lg font-semibold text-dark-text mb-2">Privacy First</h3> <p class="text-sm text-dark-text-secondary">Images auto-delete after 1 hour. No tracking, no accounts needed.</p></div></div></div></section>`}</div>   ${validate_component(NPSSurvey, "NPSSurvey").$$render(
     $$result,
     {
       visible: showNPSSurvey,
@@ -1159,7 +1196,7 @@ const Page = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     },
     {},
     {}
-  )}  ${`<button class="fixed bottom-6 left-6 bg-magic-400/20 hover:bg-magic-400/30 border border-magic-400/40 rounded-full p-3 transition-all duration-200 z-40" title="Send Feedback" data-svelte-h="svelte-10pz063"><svg class="w-5 h-5 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 0v10a2 2 0 002 2h8a2 2 0 002-2V8M9 12h6"></path></svg></button>`}`;
+  )}  ${`<button class="fixed bottom-6 left-6 bg-magic-400/20 hover:bg-magic-400/30 border border-magic-400/40 rounded-full p-3 transition-all duration-200 z-40" title="Send Feedback" data-svelte-h="svelte-10pz063"><svg class="w-5 h-5 text-magic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 0v10a2 2 0 002 2h8a2 2 0 002-2V8M9 12h6"></path></svg></button>`}  ${``}  ${validate_component(BatchProcessor, "BatchProcessor").$$render($$result, { isVisible: showBatchProcessor }, {}, {})}`;
 });
 export {
   Page as default

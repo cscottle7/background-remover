@@ -114,4 +114,12 @@
       padding-right: 1.5rem;
     }
   }
+  
+  @media (max-width: 768px) {
+    .container {
+      max-width: 100%;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
 </style>
