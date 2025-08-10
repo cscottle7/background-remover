@@ -1,12 +1,13 @@
 {
-  "name": "charactercut-investigation",
+  "name": "charactercut-tests",
   "version": "1.0.0",
-  "description": "Investigation tools for CharacterCut deployment",
+  "description": "Test suite for CharacterCut upload functionality",
   "scripts": {
-    "test:investigate": "playwright test tests/investigate-live-deployment.spec.js --headed --timeout=60000",
-    "test:investigate:headless": "playwright test tests/investigate-live-deployment.spec.js --timeout=60000"
+    "test": "playwright test",
+    "test:upload": "playwright test tests/upload-functionality.spec.js",
+    "test:debug": "playwright test tests/upload-functionality.spec.js --debug"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.54.2"
   }
 }
