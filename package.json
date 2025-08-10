@@ -1,0 +1,12 @@
+{
+  "name": "charactercut-investigation",
+  "version": "1.0.0",
+  "description": "Investigation tools for CharacterCut deployment",
+  "scripts": {
+    "test:investigate": "playwright test tests/investigate-live-deployment.spec.js --headed --timeout=60000",
+    "test:investigate:headless": "playwright test tests/investigate-live-deployment.spec.js --timeout=60000"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
