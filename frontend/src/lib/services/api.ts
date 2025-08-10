@@ -167,6 +167,22 @@ export class APIService {
         throw new APIError('Processing timeout. Please try again with a smaller image.', 408);
       }
       
+      // Check if we're in production and getting connection refused
+      if (API_BASE_URL.includes('localhost') && errorMessage.includes('Failed to fetch')) {
+        throw new APIError(
+          'Local backend server is not running. Please start the backend server with: npm run start:backend', 
+          0
+        );
+      }
+      
+      // Production deployment message
+      if (!API_BASE_URL.includes('localhost') && (errorMessage.includes('Failed to fetch') || errorMessage.includes('404'))) {
+        throw new APIError(
+          'Backend deployment is in progress. Please try again in a few minutes or run the app locally for immediate testing.', 
+          503
+        );
+      }
+      
       throw new APIError(`Network error: ${errorMessage}`, 0);
     }
   }

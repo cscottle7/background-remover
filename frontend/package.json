@@ -18,6 +18,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
+    "start:backend": "cd ../backend && python -m uvicorn simple_main:app --host 127.0.0.1 --port 8000 --reload",
+    "dev:full": "concurrently \"npm run dev\" \"npm run start:backend\"",
     "deploy": "npm run build && aws s3 sync build/ s3://charactercut-frontend-prod --delete",
     "deploy:dev": "npm run build && aws s3 sync build/ s3://charactercut-frontend-dev --delete"
   },
