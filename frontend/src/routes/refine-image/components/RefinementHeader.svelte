@@ -108,7 +108,7 @@
     <div class="header-right">
       <button
         on:click={handleCancel}
-        class="btn btn-outline border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-white px-6 py-3 rounded-lg font-medium"
+        class="btn btn-outline border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-white px-8 py-4 rounded-lg font-medium"
         disabled={isProcessing}
         aria-label="Cancel editing and return to main page"
         tabindex="0"
@@ -118,7 +118,7 @@
       
       <button
         on:click={handleSave}
-        class="btn btn-magic px-6 py-3 rounded-lg font-medium"
+        class="btn btn-magic px-8 py-4 rounded-lg font-medium"
         disabled={isProcessing}
         class:loading={isProcessing}
         aria-label={isProcessing ? "Processing image, please wait" : "Save changes and return to main page"}

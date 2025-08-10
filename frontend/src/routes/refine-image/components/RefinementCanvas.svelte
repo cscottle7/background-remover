@@ -56,6 +56,7 @@
   $: currentState = $refinementState;
   $: currentTool = currentState.currentTool;
   $: brushSize = currentState.brushSize;
+  $: backgroundTolerance = currentState.backgroundTolerance;
   $: showOriginalPreview = currentState.showOriginalPreview;
   
   // Debug prop changes
@@ -316,33 +317,49 @@
   function drawImages() {
     if (!originalImg || !processedImg) return;
     
-    console.log('🖼️ EMERGENCY: Drawing images - simple approach');
+    console.log('🖼️ Drawing images with aspect ratio preservation');
     console.log('  Canvas dimensions:', canvasWidth, 'x', canvasHeight);
     console.log('  Image dimensions:', originalImg.width, 'x', originalImg.height);
     
-    // Use the actual canvas dimensions directly - no zoom complications
-    const drawWidth = canvasWidth;
-    const drawHeight = canvasHeight;
+    // Calculate aspect ratio preserving dimensions
+    const imageAspectRatio = originalImg.width / originalImg.height;
+    const canvasAspectRatio = canvasWidth / canvasHeight;
     
-    // Clear and draw on available canvases - FILL THE ENTIRE CANVAS
+    let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+    
+    if (imageAspectRatio > canvasAspectRatio) {
+      // Image is wider than canvas - fit to width
+      drawWidth = canvasWidth;
+      drawHeight = canvasWidth / imageAspectRatio;
+      offsetY = (canvasHeight - drawHeight) / 2;
+    } else {
+      // Image is taller than canvas - fit to height
+      drawHeight = canvasHeight;
+      drawWidth = canvasHeight * imageAspectRatio;
+      offsetX = (canvasWidth - drawWidth) / 2;
+    }
+    
+    console.log('  Draw dimensions:', drawWidth, 'x', drawHeight, 'at offset:', offsetX, ',', offsetY);
+    
+    // Clear entire canvases first, then draw with aspect ratio preservation
     if (originalCtx) {
-      originalCtx.clearRect(0, 0, drawWidth, drawHeight);
-      originalCtx.drawImage(originalImg, 0, 0, drawWidth, drawHeight);
-      console.log('✅ Original image drawn at', drawWidth, 'x', drawHeight);
+      originalCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      originalCtx.drawImage(originalImg, offsetX, offsetY, drawWidth, drawHeight);
+      console.log('✅ Original image drawn at', drawWidth, 'x', drawHeight, 'with offset', offsetX, ',', offsetY);
     }
     
     if (processedCtx) {
-      processedCtx.clearRect(0, 0, drawWidth, drawHeight);
-      processedCtx.drawImage(processedImg, 0, 0, drawWidth, drawHeight);
-      console.log('✅ Processed image drawn at', drawWidth, 'x', drawHeight);
+      processedCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      processedCtx.drawImage(processedImg, offsetX, offsetY, drawWidth, drawHeight);
+      console.log('✅ Processed image drawn at', drawWidth, 'x', drawHeight, 'with offset', offsetX, ',', offsetY);
     }
     
     if (previewCtx) {
-      previewCtx.clearRect(0, 0, drawWidth, drawHeight);
+      previewCtx.clearRect(0, 0, canvasWidth, canvasHeight);
       
       // Always use processed image for now to simplify
-      previewCtx.drawImage(processedImg, 0, 0, drawWidth, drawHeight);
-      console.log('✅ Preview image drawn at', drawWidth, 'x', drawHeight);
+      previewCtx.drawImage(processedImg, offsetX, offsetY, drawWidth, drawHeight);
+      console.log('✅ Preview image drawn at', drawWidth, 'x', drawHeight, 'with offset', offsetX, ',', offsetY);
     }
     
     console.log('✅ All images drawn successfully');
@@ -436,6 +453,16 @@
     }
   }
   
+  // Helper function to check if two colors are similar within tolerance
+  function isColorSimilar(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number, tolerance: number): boolean {
+    const dr = Math.abs(r1 - r2);
+    const dg = Math.abs(g1 - g2);
+    const db = Math.abs(b1 - b2);
+    const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+    const maxDistance = tolerance * 4.4; // Scale tolerance to RGB color space
+    return distance <= maxDistance;
+  }
+  
   function applyToolEffect(x: number, y: number) {
     if (!previewCtx) {
       console.log('❌ No preview context for tool effect');
@@ -453,10 +480,16 @@
     switch (currentTool) {
       case 'erase':
         console.log('✂️ Applying erase tool');
+        // Use destination-out to properly erase pixels
+        previewCtx.save();
         previewCtx.globalCompositeOperation = 'destination-out';
+        previewCtx.globalAlpha = 1.0; // Ensure full transparency
+        previewCtx.fillStyle = '#000000'; // Color doesn't matter for destination-out
         previewCtx.beginPath();
         previewCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
         previewCtx.fill();
+        previewCtx.restore();
+        console.log('✅ Erase operation completed');
         break;
         
       case 'smart-restore':
@@ -489,7 +522,23 @@
             console.log('📦 Image data for restore:', imageData.width, 'x', imageData.height, 'pixels');
             
             // Use composite operation to blend the restored pixels properly
-            previewCtx.putImageData(imageData, copyX, copyY);
+            previewCtx.save();
+            previewCtx.globalCompositeOperation = 'source-over';
+            previewCtx.globalAlpha = 1.0; // Ensure full opacity for restoration
+            
+            // Create a temporary canvas to handle the restoration properly
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = copyWidth;
+            tempCanvas.height = copyHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Put the original image data on temp canvas
+            tempCtx.putImageData(imageData, 0, 0);
+            
+            // Draw from temp canvas to preview canvas with proper compositing
+            previewCtx.drawImage(tempCanvas, 0, 0, copyWidth, copyHeight, copyX, copyY, copyWidth, copyHeight);
+            
+            previewCtx.restore();
             
             console.log('✅ Smart restore applied successfully');
           } catch (error) {
@@ -555,37 +604,86 @@
         break;
         
       case 'smart-background-erase':
-        console.log('🗑️ Applying smart background erase tool');
-        previewCtx.globalCompositeOperation = 'destination-out';
+        console.log('🗑️ Applying smart background erase tool with tolerance:', backgroundTolerance);
         
-        // Larger, more aggressive erase for background removal
-        const bgEraseSize = Math.max(5, brushSize * 1.5);
-        previewCtx.beginPath();
-        previewCtx.arc(x, y, bgEraseSize / 2, 0, 2 * Math.PI);
-        previewCtx.fill();
+        // Get the color at the click point to use as reference
+        const clickImageData = previewCtx.getImageData(Math.floor(x), Math.floor(y), 1, 1);
+        const targetR = clickImageData.data[0];
+        const targetG = clickImageData.data[1];
+        const targetB = clickImageData.data[2];
+        
+        console.log('🎯 Target color:', targetR, targetG, targetB, 'tolerance:', backgroundTolerance);
+        
+        // Get image data for the area around the brush
+        const areaSize = Math.max(5, brushSize * 1.5);
+        const areaX = Math.max(0, Math.floor(x - areaSize / 2));
+        const areaY = Math.max(0, Math.floor(y - areaSize / 2));
+        const areaWidth = Math.min(areaSize, canvasWidth - areaX);
+        const areaHeight = Math.min(areaSize, canvasHeight - areaY);
+        
+        if (areaWidth > 0 && areaHeight > 0) {
+          const areaImageData = previewCtx.getImageData(areaX, areaY, areaWidth, areaHeight);
+          
+          // Apply tolerance-based erasing
+          for (let i = 0; i < areaImageData.data.length; i += 4) {
+            const pixelR = areaImageData.data[i];
+            const pixelG = areaImageData.data[i + 1];
+            const pixelB = areaImageData.data[i + 2];
+            const pixelA = areaImageData.data[i + 3];
+            
+            // Only erase pixels that match the target color within tolerance
+            if (pixelA > 0 && isColorSimilar(targetR, targetG, targetB, pixelR, pixelG, pixelB, backgroundTolerance)) {
+              areaImageData.data[i + 3] = 0; // Set alpha to 0 (transparent)
+            }
+          }
+          
+          previewCtx.putImageData(areaImageData, areaX, areaY);
+          console.log('✅ Smart background erase with tolerance applied');
+        }
         break;
         
       case 'smart-background-restore':
-        console.log('🎨 Applying smart background restore tool');
-        previewCtx.globalCompositeOperation = 'source-over';
+        console.log('🎨 Applying smart background restore tool with tolerance:', backgroundTolerance);
         
-        // Similar to smart-restore but with different visual feedback
         if (originalCtx && originalImg) {
           try {
+            // Get the color at the click point to use as reference for what to restore
+            const clickImageData = previewCtx.getImageData(Math.floor(x), Math.floor(y), 1, 1);
+            const targetR = clickImageData.data[0];
+            const targetG = clickImageData.data[1];
+            const targetB = clickImageData.data[2];
+            
             const restoreSize = Math.max(3, brushSize * 1.3);
-            const copyX = Math.max(0, Math.min(canvasWidth - restoreSize, x - restoreSize / 2));
-            const copyY = Math.max(0, Math.min(canvasHeight - restoreSize, y - restoreSize / 2));
+            const copyX = Math.max(0, Math.floor(x - restoreSize / 2));
+            const copyY = Math.max(0, Math.floor(y - restoreSize / 2));
             const copyWidth = Math.min(restoreSize, canvasWidth - copyX);
             const copyHeight = Math.min(restoreSize, canvasHeight - copyY);
             
-            const imageData = originalCtx.getImageData(copyX, copyY, copyWidth, copyHeight);
+            if (copyWidth > 0 && copyHeight > 0) {
+              // Get original image data for restoration
+              const originalData = originalCtx.getImageData(copyX, copyY, copyWidth, copyHeight);
+              const currentData = previewCtx.getImageData(copyX, copyY, copyWidth, copyHeight);
+              
+              // Apply tolerance-based restoration
+              for (let i = 0; i < currentData.data.length; i += 4) {
+                const currentR = currentData.data[i];
+                const currentG = currentData.data[i + 1];
+                const currentB = currentData.data[i + 2];
+                const currentA = currentData.data[i + 3];
+                
+                // Only restore pixels that match the target color within tolerance or are transparent
+                if (currentA < 255 || isColorSimilar(targetR, targetG, targetB, currentR, currentG, currentB, backgroundTolerance)) {
+                  currentData.data[i] = originalData.data[i];     // R
+                  currentData.data[i + 1] = originalData.data[i + 1]; // G
+                  currentData.data[i + 2] = originalData.data[i + 2]; // B
+                  currentData.data[i + 3] = 255; // Full opacity for restored pixels
+                }
+              }
+              
+              previewCtx.putImageData(currentData, copyX, copyY);
+            }
             
-            // Apply with reduced opacity for background restoration
-            previewCtx.globalAlpha = 0.8;
-            previewCtx.putImageData(imageData, copyX, copyY);
-            previewCtx.globalAlpha = 1.0;
-            
-            console.log('✅ Smart background restore applied successfully');
+            console.log('✅ Smart background restore with tolerance applied successfully');
           } catch (error) {
             console.error('❌ Smart background restore error:', error);
             // Fallback visual feedback
