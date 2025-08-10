@@ -68,7 +68,7 @@ export class APIService {
       console.log('🔍 API DEBUG: FormData file:', file.name, file.type, file.size);
       console.log('🔍 API DEBUG: Session ID:', sessionId);
       
-      const response = await fetch(`${API_BASE_URL}/simple-process`, {
+      const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
