@@ -63,7 +63,7 @@ export class APIService {
       
       // DEBUG: Log request details
       console.log('🔍 API DEBUG: === API REQUEST START ===');
-      console.log('🔍 API DEBUG: URL:', `${API_BASE_URL}/simple-process`);
+      console.log('🔍 API DEBUG: URL:', `${API_BASE_URL}/process`);
       console.log('🔍 API DEBUG: Method: POST');
       console.log('🔍 API DEBUG: FormData file:', file.name, file.type, file.size);
       console.log('🔍 API DEBUG: Session ID:', sessionId);
