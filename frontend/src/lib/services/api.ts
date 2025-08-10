@@ -5,7 +5,7 @@
 
 import type { ProcessingResponse, ProcessingStatusResponse } from '../types/app';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://viben-apps.dwsstaging.net.au');
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://charactercut-backend.vercel.app');
 
 class APIError extends Error {
   constructor(
@@ -63,12 +63,12 @@ export class APIService {
       
       // DEBUG: Log request details
       console.log('🔍 API DEBUG: === API REQUEST START ===');
-      console.log('🔍 API DEBUG: URL:', `${API_BASE_URL}/simple-process`);
+      console.log('🔍 API DEBUG: URL:', `${API_BASE_URL}/api/process`);
       console.log('🔍 API DEBUG: Method: POST');
       console.log('🔍 API DEBUG: FormData file:', file.name, file.type, file.size);
       console.log('🔍 API DEBUG: Session ID:', sessionId);
       
-      const response = await fetch(`${API_BASE_URL}/simple-process`, {
+      const response = await fetch(`${API_BASE_URL}/api/process`, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
@@ -329,7 +329,7 @@ export class APIService {
    */
   async healthCheck(): Promise<{ status: string; timestamp: string; version: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`);
+      const response = await fetch(`${API_BASE_URL}/api/health`);
       
       if (!response.ok) {
         throw new APIError(`Health check failed: ${response.statusText}`, response.status);
