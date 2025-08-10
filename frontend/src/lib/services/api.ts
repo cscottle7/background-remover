@@ -5,7 +5,7 @@
 
 import type { ProcessingResponse, ProcessingStatusResponse } from '../types/app';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '/api');
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://viben-apps.dwsstaging.net.au');
 
 class APIError extends Error {
   constructor(
