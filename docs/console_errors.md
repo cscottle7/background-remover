@@ -1,121 +1,189 @@
-analytics.ts:80 📊 Analytics Event: {event_type: 'session_start', session_hash: 'session_6wx2v4', timestamp: '2025-08-08T12:08:13.109Z', data: {…}}
-UnifiedInput.svelte:32 🔍 UnifiedInput component mounted
-UnifiedInput.svelte:36 🔍 Clipboard supported: true
-analytics.ts:80 📊 Analytics Event: {event_type: 'unique_session', session_hash: 'session_6wx2v4', timestamp: '2025-08-08T12:08:13.152Z', data: {…}}
-// Enhanced Container Identification Script
-// Copy and paste this into browser console to identify which containers are off-center
-
-console.log('🔍 IDENTIFYING OFF-CENTER CONTAINERS');
-console.log('===================================');
-
-const containers = document.querySelectorAll('.container');
-console.log(`Found ${containers.length} container elements\n`);
-
-containers.forEach((container, i) => {
-  const rect = container.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const viewportCenterX = window.innerWidth / 2;
-  const offset = Math.abs(centerX - viewportCenterX);
-  
-  // Get container identification info
-  const parent = container.parentElement;
-  const parentClass = parent ? parent.className : 'no parent';
-  const parentTag = parent ? parent.tagName.toLowerCase() : 'no parent';
-  const containerClasses = container.className;
-  const containerText = container.innerText.substring(0, 50) + '...';
-  
-  console.log(`\n📦 CONTAINER ${i + 1}:`);
-  console.log(`   Offset: ${offset.toFixed(1)}px ${offset < 5 ? '✅ CENTERED' : '❌ OFF-CENTER'}`);
-  console.log(`   Classes: "${containerClasses}"`);
-  console.log(`   Parent: <${parentTag} class="${parentClass}">`);
-  console.log(`   Content preview: "${containerText.trim()}"`);
-  console.log(`   Position: left=${rect.left.toFixed(1)}px, width=${rect.width.toFixed(1)}px`);
-  
-  // Add visual indicator
-  if (offset < 5) {
-    container.style.outline = '3px solid green';
-    container.style.outlineOffset = '2px';
-  } else {
-    container.style.outline = '3px solid red';
-    container.style.outlineOffset = '2px';
-  }
-  
-  // Add label
-  const label = document.createElement('div');
-  label.innerHTML = `Container ${i + 1}<br/>${offset.toFixed(1)}px offset`;
-  label.style.cssText = `
-    position: absolute;
-    top: ${rect.top + window.scrollY - 30}px;
-    left: ${rect.left}px;
-    background: ${offset < 5 ? 'green' : 'red'};
-    color: white;
-    padding: 4px 8px;
-    font-size: 12px;
-    z-index: 9999;
-    border-radius: 4px;
-    font-family: monospace;
-    line-height: 1.2;
-  `;
-  document.body.appendChild(label);
-});
-
-console.log('\n🎯 SUMMARY:');
-console.log('Green outline + label = Centered containers');
-console.log('Red outline + label = Off-center containers');
-console.log('Look for the consistent 61.5px offset pattern!');
-VM28602:4 🔍 IDENTIFYING OFF-CENTER CONTAINERS
-VM28602:5 ===================================
-VM28602:8 Found 5 container elements
-
-VM28602:23 
-📦 CONTAINER 1:
-VM28602:24    Offset: 3.7px ✅ CENTERED
-VM28602:25    Classes: "container mx-auto px-4 py-4 s-7IPF32Wcq3s8"
-VM28602:26    Parent: <header class="border-b border-dark-border bg-dark-surface/50 backdrop-blur-sm sticky top-0 z-50 s-7IPF32Wcq3s8">
-VM28602:27    Content preview: "CharacterCut
-
-R&D Initiative
-
-System Online..."
-VM28602:28    Position: left=0.0px, width=883.6px
-VM28602:23 
-📦 CONTAINER 2:
-VM28602:24    Offset: 61.5px ❌ OFF-CENTER
-VM28602:25    Classes: "container text-center s-y_bCXRrkrYfP"
-VM28602:26    Parent: <section class="hero py-12 sm:py-20 s-y_bCXRrkrYfP">
-VM28602:27    Content preview: "Transform Characters
-with Magic
-
-Watch backgrounds..."
-VM28602:28    Position: left=0.0px, width=768.0px
-VM28602:23 
-📦 CONTAINER 3:
-VM28602:24    Offset: 61.5px ❌ OFF-CENTER
-VM28602:25    Classes: "container s-y_bCXRrkrYfP"
-VM28602:26    Parent: <section class="interface py-8 s-y_bCXRrkrYfP">
-VM28602:27    Content preview: "Place Character Here
-
-Watch backgrounds disappear ..."
-VM28602:28    Position: left=0.0px, width=768.0px
-VM28602:23 
-📦 CONTAINER 4:
-VM28602:24    Offset: 61.5px ❌ OFF-CENTER
-VM28602:25    Classes: "container s-y_bCXRrkrYfP"
-VM28602:26    Parent: <section class="features py-16 sm:py-24 s-y_bCXRrkrYfP">
-VM28602:27    Content preview: "Built for Developer Workflow
-
-Designed for speed a..."
-VM28602:28    Position: left=0.0px, width=768.0px
-VM28602:23 
-📦 CONTAINER 5:
-VM28602:24    Offset: 3.7px ✅ CENTERED
-VM28602:25    Classes: "container mx-auto px-4 py-6 s-7IPF32Wcq3s8"
-VM28602:26    Parent: <footer class="border-t border-dark-border bg-dark-surface/30 mt-auto s-7IPF32Wcq3s8">
-VM28602:27    Content preview: "© 2025 CharacterCut. Research & Development Initia..."
-VM28602:28    Position: left=0.0px, width=883.6px
-VM28602:58 
-🎯 SUMMARY:
-VM28602:59 Green outline + label = Centered containers
-VM28602:60 Red outline + label = Off-center containers
-VM28602:61 Look for the consistent 61.5px offset pattern!
-undefined
+ 📊 Analytics Event: Object
+ 🔍 UnifiedInput component mounted
+ 🔍 Clipboard supported: true
+ 📊 Analytics Event: Object
+ 🔍 triggerFileInput called
+ 🔍 disabled: false
+ 🔍 fileInput: 
+ 🔍 File input clicked
+ 🔍 handleFileInputChange called
+ 🔍 fileInput.files: FileList
+ 🔍 handleFiles called with 1 files
+ 🔍 Processing file: icon-main-character.jpg image/jpeg 1862076
+ 🔍 File processed, size: 1862076
+ 🔍 Image data created: Object
+ 🔍 FRONTEND DEBUG: handleImageSelected called
+ 🔍 File details: icon-main-character.jpg 1862076 image/jpeg
+ Input state: idle -> processing (FILE_SELECTED)
+ 📊 Analytics Event: Object
+ 🔍 imageSelected event dispatched
+ 🔍 FRONTEND DEBUG: About to call processWithRecovery
+ 🔍 Session ID: session_1754794753139_j3snscb9o
+ 🔍 ERROR RECOVERY DEBUG: processWithRecovery started
+ 🔍 ERROR RECOVERY DEBUG: File: icon-main-character.jpg 1862076 image/jpeg
+ 🔍 ERROR RECOVERY DEBUG: Session ID: session_1754794753139_j3snscb9o
+ 🔍 Progress update: 10 Processing your image... 1
+ 🔍 ERROR RECOVERY DEBUG: Attempt 1 using strategy: retry_original
+ 🔍 ERROR RECOVERY DEBUG: Applied recovery strategy, file size: 1862076
+ 🔍 ERROR RECOVERY DEBUG: Calling apiService.processImageWithSession...
+ 🔍 Progress update: 16 Uploading image... 1
+ 🔍 API DEBUG: === API REQUEST START ===
+ 🔍 API DEBUG: URL: http://localhost:8000/simple-process
+ 🔍 API DEBUG: Method: POST
+ 🔍 API DEBUG: FormData file: icon-main-character.jpg image/jpeg 1862076
+ 🔍 API DEBUG: Session ID: session_1754794753139_j3snscb9o
+ Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+F @ 2.dc342a34.js:5
+localhost:8000/simple-process:1  Failed to load resource: net::ERR_CONNECTION_REFUSED
+ === API REQUEST FAILED ===
+ Error type: TypeError
+ Error message: Failed to fetch
+ Error stack: TypeError: Failed to fetch
+    at window.fetch (https://background-remover-eight-alpha.vercel.app/_app/immutable/entry/start.ca53ff30.js:1:1477)
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:13505)
+    at El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19761)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+ Processing time: 2344
+ Processing metrics: Object
+ 🔍 ERROR RECOVERY DEBUG: Attempt 1 failed with error: 
+ 🔍 ERROR RECOVERY DEBUG: Error type: object
+ 🔍 ERROR RECOVERY DEBUG: Error instanceof Error: true
+ 🔍 ERROR RECOVERY DEBUG: Error message: Network error: Failed to fetch
+ 🔍 ERROR RECOVERY DEBUG: Error stack: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19752)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+ 🔍 ERROR RECOVERY DEBUG: Classifying error message: Network error: Failed to fetch
+ 🔍 ERROR RECOVERY DEBUG: Error classification: Object
+ Recovery attempt 1 failed with strategy retry_original: Network error: Failed to fetch
+overrideMethod @ installHook.js:1
+ Error classification: Object
+ Scanline processing phase completed
+ Scanline processing phase completed
+ 🔍 Progress update: 30 Retrying original image... 2
+ 🔍 ERROR RECOVERY DEBUG: Attempt 2 using strategy: retry_original
+ 🔍 ERROR RECOVERY DEBUG: Applied recovery strategy, file size: 1862076
+ 🔍 ERROR RECOVERY DEBUG: Calling apiService.processImageWithSession...
+ 🔍 Progress update: 36 Uploading image... 2
+ 🔍 API DEBUG: === API REQUEST START ===
+ 🔍 API DEBUG: URL: http://localhost:8000/simple-process
+ 🔍 API DEBUG: Method: POST
+ 🔍 API DEBUG: FormData file: icon-main-character.jpg image/jpeg 1862076
+ 🔍 API DEBUG: Session ID: session_1754794753139_j3snscb9o
+localhost:8000/simple-process:1  Failed to load resource: net::ERR_CONNECTION_REFUSED
+2.dc342a34.js:50 === API REQUEST FAILED ===
+2.dc342a34.js:50 Error type: TypeError
+2.dc342a34.js:50 Error message: Failed to fetch
+2.dc342a34.js:50 Error stack: TypeError: Failed to fetch
+    at window.fetch (https://background-remover-eight-alpha.vercel.app/_app/immutable/entry/start.ca53ff30.js:1:1477)
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:13505)
+    at El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19761)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+2.dc342a34.js:50 Processing time: 2321
+2.dc342a34.js:50 Processing metrics: Object
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Attempt 2 failed with error: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (2.dc342a34.js:50:19752)
+    at async Ci.T (2.dc342a34.js:54:5480)
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error type: object
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error instanceof Error: true
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error message: Network error: Failed to fetch
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error stack: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19752)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Classifying error message: Network error: Failed to fetch
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error classification: Object
+hook.js:608 Recovery attempt 2 failed with strategy retry_original: Network error: Failed to fetch
+overrideMethod @ hook.js:608
+2.dc342a34.js:50 Error classification: Object
+2.dc342a34.js:54 🔍 Progress update: 50 Retrying original image... 3
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Attempt 3 using strategy: retry_original
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Applied recovery strategy, file size: 1862076
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Calling apiService.processImageWithSession...
+2.dc342a34.js:54 🔍 Progress update: 56 Uploading image... 3
+2.dc342a34.js:50 🔍 API DEBUG: === API REQUEST START ===
+2.dc342a34.js:50 🔍 API DEBUG: URL: http://localhost:8000/simple-process
+2.dc342a34.js:50 🔍 API DEBUG: Method: POST
+2.dc342a34.js:50 🔍 API DEBUG: FormData file: icon-main-character.jpg image/jpeg 1862076
+2.dc342a34.js:50 🔍 API DEBUG: Session ID: session_1754794753139_j3snscb9o
+localhost:8000/simple-process:1  Failed to load resource: net::ERR_CONNECTION_REFUSED
+2.dc342a34.js:50 === API REQUEST FAILED ===
+2.dc342a34.js:50 Error type: TypeError
+2.dc342a34.js:50 Error message: Failed to fetch
+2.dc342a34.js:50 Error stack: TypeError: Failed to fetch
+    at window.fetch (https://background-remover-eight-alpha.vercel.app/_app/immutable/entry/start.ca53ff30.js:1:1477)
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:13505)
+    at El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19761)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+2.dc342a34.js:50 Processing time: 2358
+2.dc342a34.js:50 Processing metrics: Object
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Attempt 3 failed with error: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (2.dc342a34.js:50:19752)
+    at async Ci.T (2.dc342a34.js:54:5480)
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error type: object
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error instanceof Error: true
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error message: Network error: Failed to fetch
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error stack: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19752)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Classifying error message: Network error: Failed to fetch
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error classification: Object
+hook.js:608 Recovery attempt 3 failed with strategy retry_original: Network error: Failed to fetch
+overrideMethod @ hook.js:608
+2.dc342a34.js:50 Error classification: Object
+2.dc342a34.js:54 🔍 Progress update: 70 Retrying original image... 4
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Attempt 4 using strategy: retry_original
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Applied recovery strategy, file size: 1862076
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Calling apiService.processImageWithSession...
+2.dc342a34.js:54 🔍 Progress update: 76 Uploading image... 4
+2.dc342a34.js:50 🔍 API DEBUG: === API REQUEST START ===
+2.dc342a34.js:50 🔍 API DEBUG: URL: http://localhost:8000/simple-process
+2.dc342a34.js:50 🔍 API DEBUG: Method: POST
+2.dc342a34.js:50 🔍 API DEBUG: FormData file: icon-main-character.jpg image/jpeg 1862076
+2.dc342a34.js:50 🔍 API DEBUG: Session ID: session_1754794753139_j3snscb9o
+localhost:8000/simple-process:1  Failed to load resource: net::ERR_CONNECTION_REFUSED
+2.dc342a34.js:50 === API REQUEST FAILED ===
+2.dc342a34.js:50 Error type: TypeError
+2.dc342a34.js:50 Error message: Failed to fetch
+2.dc342a34.js:50 Error stack: TypeError: Failed to fetch
+    at window.fetch (https://background-remover-eight-alpha.vercel.app/_app/immutable/entry/start.ca53ff30.js:1:1477)
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:13505)
+    at El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19761)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+2.dc342a34.js:50 Processing time: 2341
+2.dc342a34.js:50 Processing metrics: Object
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Attempt 4 failed with error: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (2.dc342a34.js:50:19752)
+    at async Ci.T (2.dc342a34.js:54:5480)
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error type: object
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error instanceof Error: true
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error message: Network error: Failed to fetch
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error stack: APIError: Network error: Failed to fetch
+    at yl.processImageWithSession (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:16049)
+    at async El.processWithRecovery (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:50:19752)
+    at async Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:5480)
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Classifying error message: Network error: Failed to fetch
+2.dc342a34.js:50 🔍 ERROR RECOVERY DEBUG: Error classification: Object
+hook.js:608 Recovery attempt 4 failed with strategy retry_original: Network error: Failed to fetch
+overrideMethod @ hook.js:608
+2.dc342a34.js:50 Error classification: Object
+2.dc342a34.js:54 🔍 FRONTEND DEBUG: processWithRecovery completed
+2.dc342a34.js:54 🔍 Recovery result: Object
+2.dc342a34.js:54 🔍 FRONTEND DEBUG: Caught error in handleImageSelected
+2.dc342a34.js:54 🔍 Error object: Error: Processing failed after 4 attempts (retry_original, retry_original, retry_original, retry_original). Network error: Failed to fetch
+    at Ci.T (2.dc342a34.js:54:6158)
+2.dc342a34.js:54 🔍 Error type: object
+2.dc342a34.js:54 🔍 Error instanceof Error: true
+2.dc342a34.js:54 🔍 Error message: Processing failed after 4 attempts (retry_original, retry_original, retry_original, retry_original). Network error: Failed to fetch
+2.dc342a34.js:54 🔍 Error stack: Error: Processing failed after 4 attempts (retry_original, retry_original, retry_original, retry_original). Network error: Failed to fetch
+    at Ci.T (https://background-remover-eight-alpha.vercel.app/_app/immutable/nodes/2.dc342a34.js:54:6158)
+2.dc342a34.js:54 🔍 Final error message set to: Processing failed after 4 attempts (retry_original, retry_original, retry_original, retry_original). Network error: Failed to fetch
+2.dc342a34.js:50 Input state: processing -> error (PROCESS_ERROR)
+2.dc342a34.js:10 📊 Analytics Event: Object
+2.dc342a34.js:50 Session continuity event: Object
+2.dc342a34.js:5 🔍 UnifiedInput component mounted
+2.dc342a34.js:5 🔍 Clipboard supported: true
