@@ -777,9 +777,18 @@
         const processedAlpha = previewImageData.data[i + 3];
         
         if (maskAlpha > 0) {
-          // ENHANCED RESTORATION with smart blending
-          // Check if this is from smart restore (higher alpha values) vs basic restore
-          const isSmartRestore = maskAlpha > 0.9;
+          // Check mask color to determine operation: white = restore, black = erase
+          const maskR = maskImageData.data[i];
+          const maskG = maskImageData.data[i + 1]; 
+          const maskB = maskImageData.data[i + 2];
+          
+          // White pixels (255,255,255) = restore, Black pixels (0,0,0) = erase
+          const isRestoreOperation = (maskR + maskG + maskB) > 384; // More white than black
+          
+          if (isRestoreOperation) {
+            // ENHANCED RESTORATION with smart blending
+            // Check if this is from smart restore (higher alpha values) vs basic restore
+            const isSmartRestore = maskAlpha > 0.9;
           
           if (isSmartRestore) {
             // Smart restore: blend original with processed for smoother transitions
@@ -806,6 +815,17 @@
             previewImageData.data[i + 1] = originalG;
             previewImageData.data[i + 2] = originalB;
             previewImageData.data[i + 3] = originalAlpha;
+          }
+          } else {
+            // ERASE OPERATION: Make pixels transparent
+            const eraseStrength = maskAlpha; // Use mask alpha as erase strength
+            const currentAlpha = previewImageData.data[i + 3];
+            
+            // Apply erase by reducing alpha
+            const newAlpha = Math.round(currentAlpha * (1 - eraseStrength));
+            previewImageData.data[i + 3] = Math.max(0, newAlpha);
+            
+            console.log(`Erasing pixel at (${x}, ${y}): alpha ${currentAlpha} -> ${newAlpha}`);
           }
         } else {
           // REAL BACKGROUND SENSITIVITY PROCESSING
@@ -1062,9 +1082,17 @@
         if (distance <= tolerance) {
           // Apply the operation to the mask
           if (operation === 'erase') {
-            mask[index + 3] = 0; // Make transparent in mask
+            // Black pixel for erase operation
+            mask[index] = 0;     // Red
+            mask[index + 1] = 0; // Green  
+            mask[index + 2] = 0; // Blue
+            mask[index + 3] = 255; // Alpha (opaque)
           } else {
-            mask[index + 3] = 255; // Make opaque in mask (restore)
+            // White pixel for restore operation
+            mask[index] = 255;     // Red
+            mask[index + 1] = 255; // Green
+            mask[index + 2] = 255; // Blue
+            mask[index + 3] = 255; // Alpha (opaque)
           }
           
           // Add neighboring pixels to queue
@@ -1630,7 +1658,7 @@
       <div class="refinement-footer">
         <button
           on:click={cancelRefinement}
-          class="btn btn-outline border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+          class="btn btn-outline border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-white px-6 py-3 rounded-lg font-medium"
           disabled={isProcessingRefinement}
         >
           Cancel
@@ -1638,7 +1666,7 @@
         
         <button
           on:click={applyRefinements}
-          class="btn btn-magic"
+          class="btn btn-magic px-6 py-3 rounded-lg font-medium"
           disabled={isProcessingRefinement}
         >
           {#if isProcessingRefinement}
