@@ -214,7 +214,7 @@ async def process_image(file: UploadFile = File(...), session_id: Optional[str] 
         response_data = {
             "processing_id": processing_id,
             "session_id": session_id,
-            "download_url": f"http://localhost:8000/download/{processing_id}",
+            "download_url": f"/download/{processing_id}",
             "processing_time": processing_time,
             "expires_at": expires_at.isoformat() + "Z"
         }
@@ -336,7 +336,7 @@ async def refine_image(
         response_data = {
             "processing_id": processing_id,
             "session_id": original_processing_id or "refined",
-            "download_url": f"http://localhost:8000/download/{processing_id}",
+            "download_url": f"/download/{processing_id}",
             "processing_time": processing_time,
             "expires_at": expires_at.isoformat() + "Z"
         }
@@ -451,7 +451,7 @@ async def process_batch_images(
                     "index": index,
                     "processing_id": processing_id,
                     "success": True,
-                    "download_url": f"http://localhost:8000/download/{processing_id}",
+                    "download_url": f"/download/{processing_id}",
                     "filename": file.filename,
                     "expires_at": expires_at.isoformat() + "Z"
                 }

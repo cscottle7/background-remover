@@ -1,0 +1,54 @@
+# Docker ignore file for CharacterCut Backend
+
+# Development files
+.env
+.env.local
+.env.development
+.env.production
+.git/
+.gitignore
+README.md
+*.md
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test_results/
+.tox/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Serverless specific (not needed for Docker)
+serverless.yml
+.serverless/
+
+# Local development scripts
+start_server.bat
+package.json
+
+# Logs
+*.log
+logs/

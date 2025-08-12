@@ -63,12 +63,12 @@ export class APIService {
       
       // DEBUG: Log request details
       console.log('🔍 API DEBUG: === API REQUEST START ===');
-      console.log('🔍 API DEBUG: URL:', `${API_BASE_URL}/api/process`);
+      console.log('🔍 API DEBUG: URL:', `${API_BASE_URL}/process`);
       console.log('🔍 API DEBUG: Method: POST');
       console.log('🔍 API DEBUG: FormData file:', file.name, file.type, file.size);
       console.log('🔍 API DEBUG: Session ID:', sessionId);
       
-      const response = await fetch(`${API_BASE_URL}/api/process`, {
+      const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
@@ -329,7 +329,7 @@ export class APIService {
    */
   async healthCheck(): Promise<{ status: string; timestamp: string; version: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/health`);
+      const response = await fetch(`${API_BASE_URL}/health`);
       
       if (!response.ok) {
         throw new APIError(`Health check failed: ${response.statusText}`, response.status);
