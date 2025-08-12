@@ -86,6 +86,10 @@ dist/
 .vercel/
 *.tgz
 
+# SvelteKit build outputs
+.svelte-kit/
+.vercel/
+
 # Local env files
 .env.local
 .env.development.local
