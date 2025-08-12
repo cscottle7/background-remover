@@ -1,4 +1,9 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
-  "installCommand": "cd frontend && npm install"
+  "installCommand": "cd frontend && npm install",
+  "functions": {
+    "frontend/src/routes/**": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }

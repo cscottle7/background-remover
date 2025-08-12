@@ -4,7 +4,7 @@
   "description": "CharacterCut frontend - AI-powered background removal for character assets",
   "private": true,
   "engines": {
-    "node": "22.x"
+    "node": "18.x"
   },
   "scripts": {
     "build": "vite build",
