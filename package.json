@@ -1,13 +1,54 @@
 {
-  "name": "charactercut-tests",
-  "version": "1.0.0",
-  "description": "Test suite for CharacterCut upload functionality",
+  "name": "charactercut-frontend",
+  "version": "0.0.1",
+  "description": "CharacterCut frontend - AI-powered background removal for character assets",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
-    "test": "playwright test",
-    "test:upload": "playwright test tests/upload-functionality.spec.js",
-    "test:debug": "playwright test tests/upload-functionality.spec.js --debug"
+    "build": "vite build",
+    "vercel-build": "vite build",
+    "dev": "vite dev --host 0.0.0.0 --port 3000",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "lint": "prettier --plugin-search-dir . --check . && eslint .",
+    "format": "prettier --plugin-search-dir . --write .",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "start:backend": "cd ../backend && python -m uvicorn simple_main:app --host 127.0.0.1 --port 8000 --reload",
+    "dev:full": "concurrently \"npm run dev\" \"npm run start:backend\"",
+    "deploy": "npm run build && aws s3 sync build/ s3://charactercut-frontend-prod --delete",
+    "deploy:dev": "npm run build && aws s3 sync build/ s3://charactercut-frontend-dev --delete"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2"
-  }
+    "@playwright/test": "^1.40.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-svelte": "^2.30.0",
+    "prettier": "^3.0.0",
+    "prettier-plugin-svelte": "^3.0.0",
+    "svelte-check": "^3.6.0",
+    "vitest": "^0.34.0",
+    "@vitest/ui": "^0.34.0"
+  },
+  "dependencies": {
+    "@sveltejs/adapter-vercel": "^3.1.0",
+    "@sveltejs/kit": "^1.27.4",
+    "@tailwindcss/typography": "^0.5.10",
+    "autoprefixer": "^10.4.16",
+    "daisyui": "^4.4.19",
+    "postcss": "^8.4.32",
+    "svelte": "^4.2.7",
+    "svelte-file-dropzone": "^2.0.0",
+    "tailwindcss": "^3.3.6",
+    "tslib": "^2.4.1",
+    "typescript": "^5.0.0",
+    "vite": "^4.4.2"
+  },
+  "type": "module"
 }

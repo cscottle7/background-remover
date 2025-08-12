@@ -80,9 +80,10 @@ coverage/
 .nyc_output
 
 # Build outputs
-frontend/build/
-frontend/dist/
-frontend/.svelte-kit/
+build/
+dist/
+.svelte-kit/
+.vercel/
 *.tgz
 
 # Local env files
