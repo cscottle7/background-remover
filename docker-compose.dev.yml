@@ -1,22 +1,23 @@
 version: '3.8'
 
 services:
-  # Backend service
+  # Backend service - development mode
   charactercut-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: charactercut-backend
+    container_name: charactercut-backend-dev
     ports:
       - "8000:8000"
     environment:
       - STAGE=development
       - PORT=8000
+      - PYTHONPATH=/app
     volumes:
-      # Mount source code for development hot-reload
-      - ./backend/src:/app/src:ro
-      - ./backend/simple_main.py:/app/simple_main.py:ro
+      # Mount entire backend for live development
+      - ./backend:/app:rw
     restart: unless-stopped
+    command: ["uvicorn", "simple_main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
       interval: 30s
@@ -26,21 +27,22 @@ services:
     networks:
       - charactercut-network
 
-  # Frontend service
+  # Frontend service - development mode with hot reload
   charactercut-frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: charactercut-frontend
+    image: node:18-alpine
+    container_name: charactercut-frontend-dev
+    working_dir: /app
     ports:
       - "3000:3000"
+      - "5173:5173"  # Vite dev server
     environment:
       - VITE_API_URL=http://charactercut-backend:8000
     volumes:
-      # Mount source code for development
-      - ./src:/app/src:ro
-      - ./static:/app/static:ro
-      - ./package.json:/app/package.json:ro
+      # Mount source for hot reload
+      - .:/app:rw
+      - /app/node_modules
+    command: >
+      sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
     depends_on:
       charactercut-backend:
         condition: service_healthy
