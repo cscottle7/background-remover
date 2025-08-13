@@ -1640,6 +1640,8 @@
                           ✕
                         {:else if currentTool === 'edge-refine'}
                           ✨
+                        {:else if currentTool === 'smart-background-restore'}
+                          🔄
                         {/if}
                       </div>
                     </div>
@@ -2398,6 +2400,12 @@
     background: rgba(0, 255, 136, 0.1);
   }
   
+  .dynamic-brush-cursor.smart-background-restore {
+    border: 2px solid #00ff88;
+    background: rgba(0, 255, 136, 0.15);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+  }
+  
   .dynamic-brush-cursor.erase {
     border: 2px solid #ff4444;
     background: rgba(255, 68, 68, 0.1);
@@ -2413,6 +2421,11 @@
   
   .dynamic-brush-cursor.restore .cursor-center {
     background: #00ff88;
+  }
+  
+  .dynamic-brush-cursor.smart-background-restore .cursor-center {
+    background: #00ff88;
+    box-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
   }
   
   .dynamic-brush-cursor.erase .cursor-center {

@@ -331,7 +331,7 @@
             
             <button 
               on:click={() => fileInput?.click()}
-              class="btn btn-magic"
+              class="btn btn-magic px-6 py-3 rounded-lg font-medium"
               disabled={processing}
             >
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,7 +363,7 @@
             <div class="file-list-actions">
               <button
                 on:click={() => fileInput?.click()}
-                class="btn btn-outline btn-sm"
+                class="btn btn-outline border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-white px-4 py-2 rounded-lg font-medium"
                 disabled={processing || selectedFiles.length >= maxFiles}
               >
                 Add More
@@ -371,7 +371,7 @@
               
               <button
                 on:click={clearAll}
-                class="btn btn-outline btn-sm"
+                class="btn btn-outline border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-white px-4 py-2 rounded-lg font-medium"
                 disabled={processing}
               >
                 Clear All
@@ -460,7 +460,7 @@
           {#if !processing && batchResults === null}
             <button
               on:click={processBatch}
-              class="btn btn-magic btn-lg"
+              class="btn btn-magic px-6 py-3 rounded-lg font-medium text-lg"
               disabled={selectedFiles.length === 0}
             >
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -492,7 +492,7 @@
               <div class="results-actions">
                 <button
                   on:click={downloadAll}
-                  class="btn btn-magic"
+                  class="btn btn-magic px-6 py-3 rounded-lg font-medium"
                   disabled={batchResults.successful_count === 0}
                 >
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -503,7 +503,7 @@
                 
                 <button
                   on:click={clearAll}
-                  class="btn btn-outline"
+                  class="btn btn-outline border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-white px-6 py-3 rounded-lg font-medium"
                 >
                   Process New Batch
                 </button>
