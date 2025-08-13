@@ -1,3 +1,0 @@
-# Minimal dependencies for Vercel Functions
-pillow==10.1.0
-rembg==2.0.58
