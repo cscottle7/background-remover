@@ -5,7 +5,7 @@
 
 import type { ProcessingResponse, ProcessingStatusResponse } from '../types/app';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://background-remover-ekco.onrender.com');
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://background-remover-jet.vercel.app/api');
 
 class APIError extends Error {
   constructor(
