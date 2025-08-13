@@ -1,11 +1,8 @@
-# CharacterCut Backend Dockerfile
-# Multi-stage build for production optimization
-
-FROM python:3.11-slim as base
+# CharacterCut Backend Dockerfile - Docker Compatible
+FROM python:3.11-slim
 
 # Install system dependencies for image processing
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-dev \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
@@ -16,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy lightweight requirements
+COPY requirements-docker.txt requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -26,15 +23,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ src/
 COPY simple_main.py .
 
-# Create a non-root user for security
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
-USER appuser
-
 # Expose port
 EXPOSE 8000
 
+# Set environment variables for better Docker compatibility
+ENV PYTHONPATH=/app
+ENV OMP_NUM_THREADS=1
+
 # Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=30s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
 # Default command

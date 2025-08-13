@@ -27,6 +27,12 @@
   import { analyticsService } from '$lib/services/analytics';
   import type { ProcessingResponse, ImageData } from '$lib/types/app';
   
+  // Helper function to convert relative download URLs to full backend URLs
+  function getFullDownloadUrl(downloadUrl: string): string {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    return downloadUrl.startsWith('http') ? downloadUrl : `${API_BASE_URL}${downloadUrl}`;
+  }
+  
   // Component state
   let processing = false;
   let result: ProcessingResponse | null = null;
@@ -132,7 +138,7 @@
       if (recoveryResult.success && recoveryResult.result) {
         // Success!
         result = recoveryResult.result;
-        processedImageUrl = recoveryResult.result.download_url;
+        processedImageUrl = getFullDownloadUrl(recoveryResult.result.download_url);
         
         appActions.completeProcessing(
           recoveryResult.result.download_url, 
@@ -353,7 +359,7 @@
       
       // Update result with refined version
       result = refinedResult;
-      processedImageUrl = refinedResult.download_url;
+      processedImageUrl = getFullDownloadUrl(refinedResult.download_url);
       
       // Update app state
       appActions.completeProcessing(
@@ -453,7 +459,7 @@
         if (recoveryResult.success && recoveryResult.result) {
           // Success!
           result = recoveryResult.result;
-          processedImageUrl = recoveryResult.result.download_url;
+          processedImageUrl = getFullDownloadUrl(recoveryResult.result.download_url);
           
           appActions.completeProcessing(
             recoveryResult.result.download_url, 

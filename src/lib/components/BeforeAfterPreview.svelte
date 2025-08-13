@@ -35,9 +35,15 @@
   let countdownSeconds = Math.floor(autoProceedDelay / 1000);
   let countdownTimer: ReturnType<typeof setInterval>;
   let containerHeight = 400; // Default height
+  let processedImageUrl: string;
   
   // Reactive calculations
-  $: processedImageUrl = processedResult.download_url;
+  $: {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    processedImageUrl = processedResult.download_url.startsWith('http') 
+      ? processedResult.download_url 
+      : `${API_BASE_URL}${processedResult.download_url}`;
+  }
   $: processingTime = processedResult.processing_time || 0;
   
   onMount(() => {

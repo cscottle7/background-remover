@@ -1,0 +1,13 @@
+# Lightweight Docker-compatible requirements
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pillow==10.1.0
+
+# Use newer rembg version with better Docker compatibility
+rembg==2.0.67
+onnxruntime==1.16.3
+
+# Lightweight dependencies
+pydantic==2.5.0
+python-dotenv==1.0.0

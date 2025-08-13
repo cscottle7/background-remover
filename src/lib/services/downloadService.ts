@@ -41,8 +41,12 @@ export class DownloadService {
     metadata?: Partial<DownloadMetadata>
   ): Promise<boolean> {
     try {
+      // Ensure we use the full backend URL for relative download URLs
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const fullUrl = downloadUrl.startsWith('http') ? downloadUrl : `${API_BASE_URL}${downloadUrl}`;
+      
       // Fetch the processed image
-      const response = await fetch(downloadUrl);
+      const response = await fetch(fullUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.status}`);
       }
@@ -120,7 +124,11 @@ export class DownloadService {
     dimensions?: { width: number; height: number };
   }> {
     try {
-      const response = await fetch(downloadUrl, { method: 'HEAD' });
+      // Ensure we use the full backend URL for relative download URLs
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const fullUrl = downloadUrl.startsWith('http') ? downloadUrl : `${API_BASE_URL}${downloadUrl}`;
+      
+      const response = await fetch(fullUrl, { method: 'HEAD' });
       const originalSize = parseInt(response.headers.get('content-length') || '0');
 
       // Estimate converted size based on format
@@ -135,7 +143,7 @@ export class DownloadService {
         estimatedSize: this.formatFileSize(estimatedSize),
         format: options.format.toUpperCase(),
         filename: this.generateFilename(options),
-        dimensions: await this.getImageDimensions(downloadUrl)
+        dimensions: await this.getImageDimensions(fullUrl)
       };
 
     } catch (error) {
